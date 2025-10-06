@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import Menu from '../components/Menu';
+import './roles.css';
 
 interface Permiso { recurso: string; acciones: string[] }
 interface Rol { _id?: string; nombre: string; descripcion: string; activo: boolean; permisos?: Permiso[] }
@@ -40,7 +41,17 @@ function RoleForm({ initial, onSave, onCancel }: { initial?: Rol; onSave: (r: Ro
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!nombre || nombre.trim().length < 2) { setError('El nombre debe tener al menos 2 caracteres'); return; }
+    const errores: string[] = [];
+    if (!nombre || nombre.trim().length < 2) {
+      errores.push('El campo "Nombre" es obligatorio y debe tener al menos 2 caracteres');
+    }
+    if (!descripcion || descripcion.trim().length < 2) {
+      errores.push('El campo "Descripción" es obligatorio y debe tener al menos 2 caracteres');
+    }
+    if (errores.length > 0) {
+      setError(errores.join('. '));
+      return;
+    }
     setSaving(true);
     try {
       await onSave({ _id: initial?._id, nombre: nombre.trim(), descripcion: descripcion.trim(), activo, permisos });
@@ -52,22 +63,29 @@ function RoleForm({ initial, onSave, onCancel }: { initial?: Rol; onSave: (r: Ro
   const acciones = ['leer','crear','actualizar','eliminar','aprobar','exportar','configurar'];
 
   return (
-    <form onSubmit={submit} style={{ display: 'grid', gap: 8 }}>
-      {error && <div style={{ color: 'crimson' }}>{error}</div>}
-      <label>Nombre</label>
-      <input value={nombre} onChange={e => setNombre(e.target.value)} required />
-      <label>Descripción</label>
-      <textarea value={descripcion} onChange={e => setDescripcion(e.target.value)} rows={3} />
-      <label><input type="checkbox" checked={activo} onChange={e => setActivo(e.target.checked)} /> Activo</label>
+    <form onSubmit={submit} style={{ display: 'grid', gap: 12 }}>
+      {error && <div className="message error">{error}</div>}
+      <div className="form-row">
+        <label>Nombre</label>
+        <input value={nombre} onChange={e => setNombre(e.target.value)} required />
+      </div>
+      <div className="form-row">
+        <label>Descripción</label>
+        <textarea value={descripcion} onChange={e => setDescripcion(e.target.value)} rows={3} />
+      </div>
+      <div className="form-row">
+        <label>Estado</label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}><input type="checkbox" checked={activo} onChange={e => setActivo(e.target.checked)} /> Activo</label>
+      </div>
 
       <div>
         <strong>Permisos</strong>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginTop: 8 }}>
+        <div className="perms-grid">
           {acciones.map(a => {
             const permiso = permisos.find(p => p.recurso === 'configuracion');
             const checked = permiso ? permiso.acciones.includes(a) : false;
             return (
-              <label key={a} style={{ fontSize: 14 }}>
+              <label key={a}>
                 <input type="checkbox" checked={checked} onChange={() => toggleAccion('configuracion', a)} /> {a}
               </label>
             );
@@ -75,9 +93,9 @@ function RoleForm({ initial, onSave, onCancel }: { initial?: Rol; onSave: (r: Ro
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 8 }}>
-        <button type="submit" disabled={saving}>{saving ? 'Guardando...' : 'Guardar'}</button>
-        <button type="button" onClick={onCancel}>Cancelar</button>
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-start', marginTop: 12 }}>
+        <button className="btn primary" type="submit" disabled={saving}>{saving ? 'Guardando...' : 'Guardar'}</button>
+        <button className="btn ghost" type="button" onClick={onCancel}>Cancelar</button>
       </div>
     </form>
   );
@@ -175,42 +193,42 @@ export default function RolesPublicPage() {
   ];
 
   return (
-    <div className="pi-main">
+    <div className="roles-page">
       <aside style={{ position: 'sticky', top: 24 }}>
         <Menu items={items} />
       </aside>
 
-      <main style={{ flex: 1 }}>
-        <div className="pi-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <main className="roles-main">
+        <div className="roles-card">
+          <div className="roles-header">
             <h1>Gestión de Roles</h1>
-            <div>
-              <button onClick={() => { setShowForm(true); setEditing(null); }}>Nuevo Rol</button>
+            <div className="roles-actions">
+              <button className="btn primary" onClick={() => { setShowForm(true); setEditing(null); }}>Nuevo Rol</button>
             </div>
           </div>
 
-          {message && <div style={{ color: 'green' }}>{message}</div>}
-          {error && <div style={{ color: 'crimson' }}>{error}</div>}
+          {message && <div className="message success">{message}</div>}
+          {error && <div className="message error">{error}</div>}
 
           {loading ? <div style={{ padding: 24 }}>Cargando roles...</div> : (
-            <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 12 }}>
+            <table className="roles-table">
               <thead>
                 <tr>
-                  <th style={{ textAlign: 'left', padding: 8 }}>Nombre</th>
-                  <th style={{ textAlign: 'left', padding: 8 }}>Descripción</th>
-                  <th style={{ textAlign: 'left', padding: 8 }}>Activo</th>
-                  <th style={{ textAlign: 'left', padding: 8 }}>Acciones</th>
+                  <th>Nombre</th>
+                  <th>Descripción</th>
+                  <th>Activo</th>
+                  <th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {roles.map(r => (
                   <tr key={r._id}>
-                    <td style={{ padding: 8 }}>{r.nombre}</td>
-                    <td style={{ padding: 8 }}>{r.descripcion}</td>
-                    <td style={{ padding: 8 }}>{r.activo ? 'Sí' : 'No'}</td>
-                    <td style={{ padding: 8 }}>
-                      <button onClick={() => { setEditing(r); setShowForm(true); }}>Editar</button>
-                      <button onClick={() => del(r._id)}>Eliminar</button>
+                    <td>{r.nombre}</td>
+                    <td>{r.descripcion}</td>
+                    <td>{r.activo ? 'Sí' : 'No'}</td>
+                    <td>
+                      <button className="btn ghost" onClick={() => { setEditing(r); setShowForm(true); }}>Editar</button>
+                      <button className="btn danger" onClick={() => del(r._id)}>Eliminar</button>
                     </td>
                   </tr>
                 ))}
@@ -219,11 +237,16 @@ export default function RolesPublicPage() {
           )}
 
           {showForm && (
-            <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(2,6,23,0.5)' }}>
-              <div style={{ width: 820, background: 'white', padding: 20, borderRadius: 8 }}>
-                <h3>{editing ? 'Editar Rol' : 'Nuevo Rol'}</h3>
-                <RoleForm initial={editing || undefined} onSave={saveRole} onCancel={() => { setShowForm(false); setEditing(null); }} />
-              </div>
+            <div className="modal-overlay">
+                <div className="modal-card">
+                  <div className="modal-header">
+                    <h3 style={{ margin: 0 }}>{editing ? 'Editar Rol' : 'Nuevo Rol'}</h3>
+                    <button className="close-btn" onClick={() => { setShowForm(false); setEditing(null); }}>&times;</button>
+                  </div>
+                  <div className="modal-body">
+                    <RoleForm initial={editing || undefined} onSave={saveRole} onCancel={() => { setShowForm(false); setEditing(null); }} />
+                  </div>
+                </div>
             </div>
           )}
         </div>

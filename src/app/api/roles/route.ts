@@ -26,6 +26,7 @@ export async function POST(request: Request) {
     try {
       payload = getUserFromRequest(request);
     } catch (err: any) {
+      // Si getUserFromRequest devuelve una Response (NextResponse.json) la retornamos
       return err;
     }
 
@@ -36,11 +37,39 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const rol = new Rol(body);
+
+    // Validaciones mínimas en servidor
+    const errores: string[] = [];
+    if (!body || typeof body !== 'object') {
+      errores.push('No se recibió información del rol');
+    }
+    if (!body?.nombre || typeof body.nombre !== 'string' || body.nombre.trim().length < 2) {
+      errores.push('El campo "nombre" es obligatorio y debe tener al menos 2 caracteres');
+    }
+    if (!body?.descripcion || typeof body.descripcion !== 'string' || body.descripcion.trim().length < 2) {
+      errores.push('El campo "descripción" es obligatorio y debe tener al menos 2 caracteres');
+    }
+    // Normalizar permisos: asegurarnos que permisos es un array con { recurso, acciones[] }
+    if (!Array.isArray(body.permisos)) body.permisos = [];
+
+    if (errores.length > 0) {
+      return NextResponse.json({ success: false, message: 'Error de validación: ' + errores.join('. ') }, { status: 400 });
+    }
+
+    const rol = new Rol({
+      nombre: body.nombre.trim(),
+      descripcion: body.descripcion.trim(),
+      activo: !!body.activo,
+      permisos: body.permisos
+    });
+
     await rol.save();
-    return NextResponse.json({ success: true, data: rol }, { status: 201 });
+    // Devolver documento limpio
+    const saved = await Rol.findById(rol._id).lean();
+    return NextResponse.json({ success: true, data: saved }, { status: 201 });
   } catch (error) {
     console.error('Error POST /api/roles', error);
-    return NextResponse.json({ success: false, message: 'Error creando rol' }, { status: 500 });
+    const msg = (error as any)?.message || 'Error creando rol';
+    return NextResponse.json({ success: false, message: msg }, { status: 500 });
   }
 }
