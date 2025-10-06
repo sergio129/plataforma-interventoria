@@ -202,20 +202,23 @@ export default function RolesPublicPage() {
   const [error, setError] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [roleToDelete, setRoleToDelete] = useState<string | null>(null);
+  const [hasRoleAccess, setHasRoleAccess] = useState(false);
   
   const { loading: permissionsLoading, canAccess } = useMenuGeneration();
 
   // TODOS LOS HOOKS DEBEN ESTAR AQUÍ ANTES DE CUALQUIER RETURN CONDICIONAL
   useEffect(() => { 
     if (!permissionsLoading) {
-      if (canAccess('roles')) {
+      const hasAccess = canAccess('roles');
+      setHasRoleAccess(hasAccess);
+      if (hasAccess) {
         load();
       } else {
         setLoading(false);
         setError('No tienes permisos para acceder a la gestión de roles');
       }
     }
-  }, [permissionsLoading, canAccess]);
+  }, [permissionsLoading]); // Solo depende de permissionsLoading
 
   // load recursos for tabs
   useEffect(() => {
@@ -241,7 +244,7 @@ export default function RolesPublicPage() {
   }, []);
 
   // Si no tiene permisos, mostrar mensaje de error
-  if (!permissionsLoading && !canAccess('roles')) {
+  if (!permissionsLoading && !hasRoleAccess) {
     return (
       <div className="roles-page">
         <aside style={{ position: 'sticky', top: 24 }}>

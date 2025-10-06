@@ -4,6 +4,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 export enum TipoRecurso {
   USUARIOS = 'usuarios',
   PROYECTOS = 'proyectos',
+  ARCHIVO = 'archivo',
   DOCUMENTOS = 'documentos',
   REPORTES = 'reportes',
   CONFIGURACION = 'configuracion'
@@ -264,6 +265,10 @@ export class PermisosManager {
               acciones: Object.values(TipoPermiso)
             },
             {
+              recurso: TipoRecurso.ARCHIVO,
+              acciones: Object.values(TipoPermiso)
+            },
+            {
               recurso: TipoRecurso.DOCUMENTOS,
               acciones: [TipoPermiso.LEER, TipoPermiso.ACCEDER, TipoPermiso.CREAR, TipoPermiso.ACTUALIZAR, TipoPermiso.APROBAR]
             },
@@ -285,6 +290,10 @@ export class PermisosManager {
               recurso: TipoRecurso.PROYECTOS,
               acciones: [TipoPermiso.LEER, TipoPermiso.ACTUALIZAR],
               condiciones: { propietario: true }
+            },
+            {
+              recurso: TipoRecurso.ARCHIVO,
+              acciones: [TipoPermiso.LEER, TipoPermiso.CREAR, TipoPermiso.ACTUALIZAR, TipoPermiso.APROBAR]
             },
             {
               recurso: TipoRecurso.DOCUMENTOS,
@@ -310,6 +319,10 @@ export class PermisosManager {
               condiciones: { propietario: true }
             },
             {
+              recurso: TipoRecurso.ARCHIVO,
+              acciones: [TipoPermiso.LEER, TipoPermiso.CREAR]
+            },
+            {
               recurso: TipoRecurso.DOCUMENTOS,
               acciones: [TipoPermiso.LEER, TipoPermiso.CREAR]
             },
@@ -331,6 +344,10 @@ export class PermisosManager {
               recurso: TipoRecurso.PROYECTOS,
               acciones: [TipoPermiso.LEER],
               condiciones: { propietario: true }
+            },
+            {
+              recurso: TipoRecurso.ARCHIVO,
+              acciones: [TipoPermiso.LEER, TipoPermiso.CREAR]
             },
             {
               recurso: TipoRecurso.DOCUMENTOS,

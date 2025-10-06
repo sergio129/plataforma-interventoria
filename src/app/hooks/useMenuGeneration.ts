@@ -17,9 +17,10 @@ interface MenuItems {
 const RESOURCE_MENU_MAP: Record<string, MenuItems> = {
   'usuarios': { href: '/usuarios', label: 'Usuarios', icon: '👥', order: 1 },
   'proyectos': { href: '/proyectos', label: 'Proyectos', icon: '📋', order: 2 },
-  'documentos': { href: '/documentos', label: 'Documentos', icon: '📄', order: 3 },
-  'reportes': { href: '/reportes', label: 'Reportes', icon: '📊', order: 4 },
-  'configuracion': { href: '/configuracion', label: 'Configuración', icon: '⚙️', order: 5 },
+  'archivo': { href: '/archivo', label: 'Archivo', icon: '📁', order: 3 },
+  'documentos': { href: '/documentos', label: 'Documentos', icon: '📄', order: 4 },
+  'reportes': { href: '/reportes', label: 'Reportes', icon: '📊', order: 5 },
+  'configuracion': { href: '/configuracion', label: 'Configuración', icon: '⚙️', order: 6 },
 };
 
 export function useMenuGeneration() {

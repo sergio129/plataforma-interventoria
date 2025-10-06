@@ -150,6 +150,7 @@ export interface Permiso {
 export enum TipoRecurso {
   USUARIOS = 'usuarios',
   PROYECTOS = 'proyectos',
+  ARCHIVO = 'archivo',
   DOCUMENTOS = 'documentos',
   REPORTES = 'reportes',
   CONFIGURACION = 'configuracion'

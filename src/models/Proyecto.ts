@@ -40,12 +40,14 @@ export interface IPresupuesto {
 }
 
 export interface IHito {
+  _id?: mongoose.Types.ObjectId; // Identificador único para cada hito
   nombre: string;
   descripcion?: string;
   fechaPlaneada: Date;
   fechaReal?: Date;
   completado: boolean;
   porcentajeAvance: number;
+  observaciones?: string; // Observaciones adicionales para el hito
 }
 
 // Interface principal para Proyecto
@@ -96,6 +98,55 @@ export interface IProyecto extends Document {
   creadoPor: mongoose.Types.ObjectId;
   tags?: string[];
   observaciones?: string;
+
+  // Nuevos campos y subdocumentos
+  radicados?: {
+    numero: string;
+    fecha: Date;
+    destinatario: string;
+    resumen?: string;
+    archivo?: mongoose.Types.ObjectId;
+  }[];
+  evidencias?: {
+    descripcion: string;
+    fecha: Date;
+    archivos: mongoose.Types.ObjectId[];
+  }[];
+  personal?: {
+    nombre: string;
+    fechaIngreso: Date;
+    fechaSalida?: Date;
+    observaciones?: string;
+  }[];
+  vehiculos?: {
+    tipo: string;
+    cantidad: number;
+    fechaRegistro: Date;
+  }[];
+  planesContingencia?: {
+    descripcion: string;
+    archivos: mongoose.Types.ObjectId[];
+    sugerencias?: {
+      descripcion?: string;
+      fecha?: Date;
+      estado?: 'pendiente' | 'resuelto';
+    }[];
+  }[];
+  bitacoraActualizaciones?: {
+    descripcion: string;
+    fecha: Date;
+  }[];
+  inventarioEquipos?: {
+    nombre: string;
+    descripcion?: string;
+    fechaAdquisicion?: Date;
+    estado?: 'activo' | 'inactivo' | 'mantenimiento';
+  }[];
+  alertas?: {
+    mensaje: string;
+    fecha: Date;
+    usuario: mongoose.Types.ObjectId;
+  }[];
 }
 
 // Schema para sub-documentos
@@ -142,6 +193,38 @@ const HitoSchema = new Schema({
     min: [0, 'El porcentaje no puede ser negativo'],
     max: [100, 'El porcentaje no puede exceder 100']
   }
+});
+
+// Subdocumento para evidencias
+const EvidenciaSchema = new Schema({
+  descripcion: { type: String, required: true, trim: true },
+  fecha: { type: Date, required: true },
+  archivos: [{
+    type: Schema.Types.ObjectId,
+    ref: 'Documento'
+  }]
+});
+
+// Subdocumento para planes de contingencia
+const PlanContingenciaSchema = new Schema({
+  descripcion: { type: String, required: true, trim: true },
+  archivos: [{
+    type: Schema.Types.ObjectId,
+    ref: 'Documento'
+  }],
+  sugerencias: [{
+    descripcion: { type: String, trim: true },
+    fecha: { type: Date },
+    estado: { type: String, enum: ['pendiente', 'resuelto'], default: 'pendiente' }
+  }]
+});
+
+// Subdocumento para inventario de equipos
+const EquipoSchema = new Schema({
+  nombre: { type: String, required: true, trim: true },
+  descripcion: { type: String, trim: true },
+  fechaAdquisicion: { type: Date },
+  estado: { type: String, enum: ['activo', 'inactivo', 'mantenimiento'], default: 'activo' }
 });
 
 // Schema principal para Proyecto

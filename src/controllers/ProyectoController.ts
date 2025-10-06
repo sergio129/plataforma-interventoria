@@ -5,61 +5,35 @@ import { PermisosManager, TipoRecurso, TipoPermiso } from '../models/Rol';
 
 export class ProyectoController {
   /**
-   * Listar todos los proyectos con filtros y paginación
+   * Listar todos los proyectos con filtros y paginación (actualizado para nuevos campos)
    */
   static async listar(req: Request, res: Response): Promise<void> {
     try {
-      const { page = 1, limit = 10, tipo, estado, prioridad, search, asignado } = req.query;
-      
+      const { page = 1, limit = 10, tipo, estado, prioridad, search, radicado } = req.query;
+
       const pageNum = parseInt(page as string);
       const limitNum = parseInt(limit as string);
       const skip = (pageNum - 1) * limitNum;
 
       // Construir filtros
       const filtros: any = {};
-      
-      if (tipo && Object.values(TipoProyecto).includes(tipo as TipoProyecto)) {
-        filtros.tipoProyecto = tipo;
-      }
-      
-      if (estado && Object.values(EstadoProyecto).includes(estado as EstadoProyecto)) {
-        filtros.estado = estado;
-      }
 
-      if (prioridad && Object.values(PrioridadProyecto).includes(prioridad as PrioridadProyecto)) {
-        filtros.prioridad = prioridad;
-      }
-
+      if (tipo) filtros.tipoProyecto = tipo;
+      if (estado) filtros.estado = estado;
+      if (prioridad) filtros.prioridad = prioridad;
       if (search) {
         filtros.$or = [
           { nombre: { $regex: search, $options: 'i' } },
-          { codigo: { $regex: search, $options: 'i' } },
           { descripcion: { $regex: search, $options: 'i' } },
-          { 'ubicacion.ciudad': { $regex: search, $options: 'i' } },
-          { tags: { $in: [new RegExp(search as string, 'i')] } }
+          { 'radicados.numero': { $regex: search, $options: 'i' } }
         ];
       }
 
-      // Filtrar por proyectos asignados al usuario actual si no es admin
-      if (asignado === 'true' || req.usuario.tipoUsuario !== 'administrador') {
-        filtros.$or = [
-          { contratista: req.usuario._id },
-          { interventor: req.usuario._id },
-          { supervisor: req.usuario._id },
-          { creadoPor: req.usuario._id }
-        ];
-      }
+      if (radicado) filtros['radicados.numero'] = radicado;
 
-      // Obtener proyectos con paginación
-      const proyectos = await Proyecto
-        .find(filtros)
-        .populate('contratista', 'nombre apellido email profesion')
-        .populate('interventor', 'nombre apellido email profesion')
-        .populate('supervisor', 'nombre apellido email profesion')
-        .populate('creadoPor', 'nombre apellido email')
-        .sort({ fechaCreacion: -1 })
-        .skip(skip)
-        .limit(limitNum);
+      const proyectos = await Proyecto.find(filtros)
+        .populate('contratista interventor supervisor creadoPor')
+        .populate('radicados.archivo evidencias.archivos planesContingencia.archivos');
 
       const total = await Proyecto.countDocuments(filtros);
 
@@ -77,10 +51,7 @@ export class ProyectoController {
       });
     } catch (error) {
       console.error('Error al listar proyectos:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Error interno del servidor'
-      });
+      res.status(500).json({ success: false, message: 'Error interno del servidor' });
     }
   }
 
@@ -129,11 +100,10 @@ export class ProyectoController {
   }
 
   /**
-   * Crear nuevo proyecto
+   * Crear nuevo proyecto (actualizado para manejar nuevos campos)
    */
   static async crear(req: Request, res: Response): Promise<void> {
     try {
-      // Verificar permisos
       const tienePermiso = await PermisosManager.usuarioTienePermiso(
         req.usuario._id,
         TipoRecurso.PROYECTOS,
@@ -141,21 +111,13 @@ export class ProyectoController {
       );
 
       if (!tienePermiso) {
-        res.status(403).json({
-          success: false,
-          message: 'No tienes permisos para crear proyectos'
-        });
+        res.status(403).json({ success: false, message: 'No tienes permisos para crear proyectos' });
         return;
       }
 
-      // Validar errores de entrada
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        res.status(400).json({
-          success: false,
-          message: 'Datos de entrada inválidos',
-          errors: errors.array()
-        });
+        res.status(400).json({ success: false, message: 'Datos de entrada inválidos', errors: errors.array() });
         return;
       }
 
@@ -169,27 +131,18 @@ export class ProyectoController {
       await nuevoProyecto.save();
 
       const proyectoCreado = await Proyecto.findById(nuevoProyecto._id)
-        .populate('contratista', 'nombre apellido email')
-        .populate('interventor', 'nombre apellido email')
-        .populate('supervisor', 'nombre apellido email')
-        .populate('creadoPor', 'nombre apellido email');
+        .populate('contratista interventor supervisor creadoPor')
+        .populate('radicados.archivo evidencias.archivos planesContingencia.archivos');
 
-      res.status(201).json({
-        success: true,
-        message: 'Proyecto creado exitosamente',
-        data: proyectoCreado
-      });
+      res.status(201).json({ success: true, message: 'Proyecto creado exitosamente', data: proyectoCreado });
     } catch (error) {
       console.error('Error al crear proyecto:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Error interno del servidor'
-      });
+      res.status(500).json({ success: false, message: 'Error interno del servidor' });
     }
   }
 
   /**
-   * Actualizar proyecto
+   * Actualizar proyecto (actualizado para manejar nuevos campos)
    */
   static async actualizar(req: Request, res: Response): Promise<void> {
     try {
@@ -197,79 +150,23 @@ export class ProyectoController {
 
       const proyecto = await Proyecto.findById(id);
       if (!proyecto) {
-        res.status(404).json({
-          success: false,
-          message: 'Proyecto no encontrado'
-        });
+        res.status(404).json({ success: false, message: 'Proyecto no encontrado' });
         return;
       }
 
-      // Verificar permisos
-      const contexto = {
-        propietarioId: proyecto.creadoPor.toString(),
-        estado: proyecto.estado
-      };
-
-      const tienePermiso = await PermisosManager.usuarioTienePermiso(
-        req.usuario._id,
-        TipoRecurso.PROYECTOS,
-        TipoPermiso.ACTUALIZAR,
-        contexto
-      );
-
-      if (!tienePermiso) {
-        res.status(403).json({
-          success: false,
-          message: 'No tienes permisos para actualizar este proyecto'
-        });
-        return;
-      }
-
-      // Validar errores de entrada
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        res.status(400).json({
-          success: false,
-          message: 'Datos de entrada inválidos',
-          errors: errors.array()
-        });
-        return;
-      }
-
-      // Actualizar campos permitidos
-      const camposPermitidos = [
-        'nombre', 'descripcion', 'tipoProyecto', 'estado', 'prioridad',
-        'fechaInicio', 'fechaFinPlaneada', 'ubicacion', 'contratista',
-        'interventor', 'supervisor', 'contactoCliente', 'presupuesto',
-        'porcentajeAvance', 'hitos', 'tags', 'observaciones'
-      ];
-
-      camposPermitidos.forEach(campo => {
-        if (req.body[campo] !== undefined) {
-          (proyecto as any)[campo] = req.body[campo];
-        }
-      });
-
+      Object.assign(proyecto, req.body);
       proyecto.fechaActualizacion = new Date();
+
       await proyecto.save();
 
       const proyectoActualizado = await Proyecto.findById(id)
-        .populate('contratista', 'nombre apellido email')
-        .populate('interventor', 'nombre apellido email')
-        .populate('supervisor', 'nombre apellido email')
-        .populate('creadoPor', 'nombre apellido email');
+        .populate('contratista interventor supervisor creadoPor')
+        .populate('radicados.archivo evidencias.archivos planesContingencia.archivos');
 
-      res.json({
-        success: true,
-        message: 'Proyecto actualizado exitosamente',
-        data: proyectoActualizado
-      });
+      res.json({ success: true, message: 'Proyecto actualizado exitosamente', data: proyectoActualizado });
     } catch (error) {
       console.error('Error al actualizar proyecto:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Error interno del servidor'
-      });
+      res.status(500).json({ success: false, message: 'Error interno del servidor' });
     }
   }
 

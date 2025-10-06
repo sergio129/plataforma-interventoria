@@ -45,7 +45,7 @@ export default function DashboardPage() {
       <main style={{ flex: 1 }}>
         <div className="pi-header">
           <div>
-            <h1>Dashboard</h1>
+            <h1>Consorcio interventoria de tránsito de Montería - CINTRANS</h1>
             <p style={{ color: '#6b7280' }}>Rol actual: <strong>{role}</strong></p>
           </div>
           <div>
