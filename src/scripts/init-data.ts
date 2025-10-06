@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { connectToDatabase, db } from '../lib/database';
 import { Usuario, TipoUsuario, EstadoUsuario } from '../lib/models/Usuario';
 import { Proyecto, TipoProyecto, EstadoProyecto, PrioridadProyecto } from '../lib/models/Proyecto';
