@@ -27,6 +27,7 @@ export interface IUsuario extends Document {
   profesion?: string;
   experiencia?: string;
   certificaciones?: string[];
+  roles?: any[]; // Referencias a Rol
   fechaCreacion: Date;
   fechaActualizacion: Date;
   ultimoAcceso?: Date;
@@ -105,6 +106,8 @@ const UsuarioSchema: Schema = new Schema({
   ultimoAcceso: {
     type: Date
   }
+  ,
+  roles: [{ type: Schema.Types.ObjectId, ref: 'Rol' }]
 });
 
 // Middleware para actualizar fechaActualizacion

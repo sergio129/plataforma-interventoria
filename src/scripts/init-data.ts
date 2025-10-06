@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { connectToDatabase, db } from '../lib/database';
 import { Usuario, TipoUsuario, EstadoUsuario } from '../lib/models/Usuario';
+import { PermisosManager, Rol } from '../lib/models/Rol';
 import { Proyecto, TipoProyecto, EstadoProyecto, PrioridadProyecto } from '../lib/models/Proyecto';
 import bcrypt from 'bcryptjs';
 
@@ -103,6 +104,22 @@ class DataInitializer {
     const usuariosCreados = await Usuario.insertMany(usuarios);
     console.log(`✅ ${usuariosCreados.length} usuarios creados`);
     
+      // Asegurar roles por defecto y asignar Super Administrador al primer admin encontrado
+      await PermisosManager.crearRolesPorDefecto();
+
+      const superAdminRole = await Rol.findOne({ nombre: 'Super Administrador' });
+      if (superAdminRole) {
+        // asignar rol al usuario admin creado
+        const adminUser = await Usuario.findOne({ email: 'admin@interventoria.com' });
+        if (adminUser) {
+          adminUser.roles = adminUser.roles && adminUser.roles.length ? adminUser.roles : [];
+          if (!adminUser.roles.find((r: any) => String(r) === String(superAdminRole._id))) {
+            adminUser.roles.push(superAdminRole._id as any);
+            await adminUser.save();
+            console.log('✅ Rol Super Administrador asignado al usuario admin');
+          }
+        }
+      }
     return;
   }
 
