@@ -266,6 +266,7 @@ export default function RolesPublicPage() {
             <div className="modal-overlay">
                 <div className="modal-card">
                   <div className="modal-header" style={{ justifyContent: 'flex-start', gap: 12 }}>
+                    <span className="modal-icon">📝</span>
                     <h3 style={{ margin: 0, flex: 1, textAlign: 'left' }}>{editing ? 'Editar Rol' : 'Nuevo Rol'}</h3>
                     <button className="close-btn" onClick={() => { setShowForm(false); setEditing(null); }}>&times;</button>
                   </div>
