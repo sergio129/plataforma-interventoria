@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '../../../lib/database';
-import { Rol, PermisosManager } from '../../../lib/models/Rol';
+import { Rol, PermisosManager, TipoRecurso, TipoPermiso } from '../../../lib/models/Rol';
+import { getUserFromRequest } from '../../../lib/auth';
 
 export async function GET() {
   try {
@@ -19,6 +20,21 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     await connectToDatabase();
+
+    // Verificar JWT y permisos
+    let payload;
+    try {
+      payload = getUserFromRequest(request);
+    } catch (err: any) {
+      return err;
+    }
+
+    // Permiso: CONFIGURACION:CONFIGURAR o tipoUsuario administrador
+    const tienePermiso = await PermisosManager.usuarioTienePermiso(payload.userId, TipoRecurso.CONFIGURACION, TipoPermiso.CONFIGURAR);
+    if (!tienePermiso && payload.tipoUsuario !== 'administrador') {
+      return NextResponse.json({ success: false, message: 'No autorizado' }, { status: 403 });
+    }
+
     const body = await request.json();
     const rol = new Rol(body);
     await rol.save();

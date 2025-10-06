@@ -1,6 +1,7 @@
 "use client";
 import React from 'react';
 import Link from 'next/link';
+import Menu from '../components/Menu';
 
 function getUserRole(): string {
   try {
@@ -27,23 +28,32 @@ export default function DashboardPage() {
     { href: '/dashboard/proyectos', label: 'Proyectos', roles: ['administrador','interventor','contratista','supervisor'] }
   ];
 
+  const items = menu.filter(m => m.roles.includes(role)).map(m => ({ href: m.href, label: m.label }));
+
   return (
-    <div style={{ padding: 24 }}>
-      <h1>Dashboard</h1>
-      <p>Rol actual: <strong>{role}</strong></p>
+    <div className="pi-main">
+      <div>
+        {/* Menu lateral */}
+        <div style={{ position: 'sticky', top: 24 }}>
+          <Menu items={items} />
+        </div>
+      </div>
 
-      <nav style={{ marginTop: 16 }}>
-        <ul style={{ display: 'flex', gap: 12, listStyle: 'none', padding: 0 }}>
-          {menu.filter(m => m.roles.includes(role)).map(m => (
-            <li key={m.href}><Link href={m.href} style={{ padding: '8px 12px', background: '#f3f4f6', borderRadius: 6 }}>{m.label}</Link></li>
-          ))}
-        </ul>
-      </nav>
+      <main style={{ flex: 1 }}>
+        <div className="pi-header">
+          <div>
+            <h1>Dashboard</h1>
+            <p style={{ color: '#6b7280' }}>Rol actual: <strong>{role}</strong></p>
+          </div>
+        </div>
 
-      <section style={{ marginTop: 24 }}>
-        <h2>Bienvenido al panel</h2>
-        <p>Selecciona una opción del menú para comenzar.</p>
-      </section>
+        <section style={{ marginTop: 18 }}>
+          <div className="pi-card">
+            <h2>Bienvenido al panel</h2>
+            <p>Selecciona una opción del menú para comenzar.</p>
+          </div>
+        </section>
+      </main>
     </div>
   );
 }

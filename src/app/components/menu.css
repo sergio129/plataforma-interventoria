@@ -1,0 +1,25 @@
+.pi-menu {
+  width: 220px;
+  padding: 20px;
+  background: linear-gradient(180deg, #0f172a 0%, #111827 100%);
+  color: #e6eef8;
+  border-radius: 8px;
+}
+.pi-menu-logo {
+  font-weight: 700;
+  font-size: 18px;
+  margin-bottom: 16px;
+}
+.pi-menu ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px }
+.pi-menu-link {
+  display: block;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: #e6eef8;
+  text-decoration: none;
+  transition: background 0.12s ease, transform 0.08s ease;
+}
+.pi-menu-link:hover { background: rgba(255,255,255,0.04); transform: translateX(4px) }
+.pi-main { display: flex; gap: 24px; padding: 24px }
+.pi-card { background: white; padding: 18px; border-radius: 10px; box-shadow: 0 8px 30px rgba(2,6,23,0.08) }
+.pi-header { display:flex; align-items:center; justify-content:space-between }
