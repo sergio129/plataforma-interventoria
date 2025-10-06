@@ -167,13 +167,27 @@ export class PermisosManager {
       const { Usuario } = await import('./Usuario');
       const usuario = await Usuario.findById(usuarioId).populate('roles');
       
+      console.log('Usuario encontrado:', {
+        id: usuarioId,
+        found: !!usuario,
+        roles: usuario?.roles?.length || 0,
+        rolesData: usuario?.roles?.map((r: any) => ({ nombre: r.nombre, activo: r.activo, permisos: r.permisos?.length || 0 })) || []
+      });
+      
       if (!usuario || !usuario.roles) {
+        console.log('Usuario no encontrado o sin roles');
         return [];
       }
 
       const todosLosPermisos: IPermiso[] = [];
       
       for (const rol of usuario.roles) {
+        console.log('Procesando rol:', {
+          nombre: rol.nombre,
+          activo: rol.activo,
+          permisos: rol.permisos?.length || 0
+        });
+        
         if (rol.activo) {
           todosLosPermisos.push(...rol.permisos);
         }
