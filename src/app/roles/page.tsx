@@ -188,6 +188,14 @@ export default function RolesPublicPage() {
   const [showForm, setShowForm] = useState(false);
   const [recursos, setRecursos] = useState<{ key: string; label: string }[]>([]);
   const [activeTab, setActiveTab] = useState<string | null>(null);
+  const [recursosLoading, setRecursosLoading] = useState(true);
+  const FALLBACK_RECURSOS = [
+    { key: 'usuarios', label: 'usuarios' },
+    { key: 'proyectos', label: 'proyectos' },
+    { key: 'documentos', label: 'documentos' },
+    { key: 'reportes', label: 'reportes' },
+    { key: 'configuracion', label: 'configuracion' }
+  ];
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -215,8 +223,16 @@ export default function RolesPublicPage() {
         if (j.success) {
           setRecursos(j.data.recursos || []);
           setActiveTab((j.data.recursos && j.data.recursos[0] && j.data.recursos[0].key) || null);
+        } else {
+          setRecursos(FALLBACK_RECURSOS);
+          setActiveTab(FALLBACK_RECURSOS[0].key);
         }
-      } catch (e) {}
+      } catch (e) {
+        setRecursos(FALLBACK_RECURSOS);
+        setActiveTab(FALLBACK_RECURSOS[0].key);
+      } finally {
+        setRecursosLoading(false);
+      }
     }
     loadRecursos();
   }, []);
@@ -364,8 +380,14 @@ export default function RolesPublicPage() {
                   <div className="left">
                     <div style={{ padding: 8, color: '#64748b', fontWeight: 600 }}>Módulos</div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                      {recursos.map(r => (
-                        <button key={r.key} type="button" className={`tab ${activeTab === r.key ? 'active' : ''}`} onClick={() => setActiveTab(r.key)} style={{ textAlign: 'left', padding: '8px 12px' }}>{r.label}</button>
+                      {recursosLoading ? (
+                        <div className="left module-placeholder">Cargando módulos…</div>
+                      ) : (recursos.length === 0 ? (
+                        <div className="left module-placeholder">No hay módulos</div>
+                      ) : (
+                        recursos.map(r => (
+                          <button key={r.key} type="button" className={`module-btn ${activeTab === r.key ? 'active' : ''}`} onClick={() => setActiveTab(r.key)}>{r.label}</button>
+                        ))
                       ))}
                     </div>
                   </div>
