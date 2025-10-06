@@ -68,41 +68,74 @@ function RoleForm({ initial, onSave, onCancel }: { initial?: Rol; onSave: (r: Ro
   const acciones = ['leer','crear','actualizar','eliminar','aprobar','exportar','configurar'];
 
   return (
-    <form onSubmit={submit} style={{ display: 'grid', gap: 12 }}>
-      {error && <div className="message error">{error}</div>}
-      <div className="form-row">
-        <label className="label-obligatorio">Nombre <span className="asterisco">*</span></label>
-        <input value={nombre} onChange={e => setNombre(e.target.value)} required aria-required="true" />
-        {nombreError && <div className="field-error">{nombreError}</div>}
+    <form onSubmit={submit} className="space-y-6">
+      {error && (
+        <div className="flex items-center space-x-2 text-red-600 mb-2">
+          <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+          </svg>
+          <span className="text-sm">{error}</span>
+        </div>
+      )}
+      <div className="space-y-2">
+        <label className="block text-sm font-semibold text-gray-700">Nombre del Rol<span className="asterisco">*</span></label>
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+          </div>
+          <input value={nombre} onChange={e => setNombre(e.target.value)} required aria-required="true"
+            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all placeholder-gray-400" />
+        </div>
+        {nombreError && (
+          <div className="flex items-center space-x-1 text-red-600">
+            <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
+            <span className="text-sm">{nombreError}</span>
+          </div>
+        )}
       </div>
-      <div className="form-row">
-        <label className="label-obligatorio">Descripción <span className="asterisco">*</span></label>
-        <textarea value={descripcion} onChange={e => setDescripcion(e.target.value)} rows={3} required aria-required="true" />
-        {descError && <div className="field-error">{descError}</div>}
+      <div className="space-y-2">
+        <label className="block text-sm font-semibold text-gray-700">Descripción <span className="asterisco">*</span></label>
+        <div>
+          <textarea value={descripcion} onChange={e => setDescripcion(e.target.value)} rows={3} required aria-required="true"
+            className="w-full pl-4 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all placeholder-gray-400" />
+        </div>
+        {descError && (
+          <div className="flex items-center space-x-1 text-red-600">
+            <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
+            <span className="text-sm">{descError}</span>
+          </div>
+        )}
       </div>
-      <div className="form-row">
-        <label>Estado</label>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}><input type="checkbox" checked={activo} onChange={e => setActivo(e.target.checked)} /> Activo</label>
+      <div className="space-y-2">
+        <label className="block text-sm font-semibold text-gray-700">Estado</label>
+        <label className="flex items-center gap-2 text-gray-700 font-medium">
+          <input type="checkbox" checked={activo} onChange={e => setActivo(e.target.checked)} /> Activo
+        </label>
       </div>
-
-      <div>
-        <strong>Permisos</strong>
-        <div className="perms-grid">
+      <div className="space-y-2">
+        <strong className="block text-sm font-semibold text-gray-700 mb-1">Permisos</strong>
+        <div className="grid grid-cols-4 gap-3">
           {acciones.map(a => {
             const permiso = permisos.find(p => p.recurso === 'configuracion');
             const checked = permiso ? permiso.acciones.includes(a) : false;
             return (
-              <label key={a}>
+              <label key={a} className="flex items-center gap-2 text-gray-700 font-medium">
                 <input type="checkbox" checked={checked} onChange={() => toggleAccion('configuracion', a)} /> {a}
               </label>
             );
           })}
         </div>
       </div>
-
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-start', marginTop: 12 }}>
-        <button className="btn primary" type="submit" disabled={saving}>{saving ? 'Guardando...' : 'Guardar'}</button>
-        <button className="btn ghost" type="button" onClick={onCancel}>Cancelar</button>
+      <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200">
+        <button type="button" onClick={onCancel}
+          className="px-6 py-3 text-gray-700 border-2 border-gray-300 rounded-xl hover:bg-gray-50 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all font-medium">
+          Cancelar
+        </button>
+        <button type="submit"
+          className="px-6 py-3 text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium shadow-lg hover:shadow-xl flex items-center space-x-2"
+          disabled={saving}>
+          <span>{saving ? 'Guardando...' : 'Guardar'}</span>
+        </button>
       </div>
     </form>
   );
