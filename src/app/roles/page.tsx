@@ -200,9 +200,12 @@ export default function RolesPublicPage() {
   ];
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [roleToDelete, setRoleToDelete] = useState<string | null>(null);
   
   const { loading: permissionsLoading, canAccess } = useMenuGeneration();
 
+  // TODOS LOS HOOKS DEBEN ESTAR AQUÍ ANTES DE CUALQUIER RETURN CONDICIONAL
   useEffect(() => { 
     if (!permissionsLoading) {
       if (canAccess('roles')) {
@@ -213,6 +216,29 @@ export default function RolesPublicPage() {
       }
     }
   }, [permissionsLoading, canAccess]);
+
+  // load recursos for tabs
+  useEffect(() => {
+    async function loadRecursos() {
+      try {
+        const r = await fetch('/api/permisos/resources');
+        const j = await r.json();
+        if (j.success) {
+          setRecursos(j.data.recursos || []);
+          setActiveTab((j.data.recursos && j.data.recursos[0] && j.data.recursos[0].key) || null);
+        } else {
+          setRecursos(FALLBACK_RECURSOS);
+          setActiveTab(FALLBACK_RECURSOS[0].key);
+        }
+      } catch (e) {
+        setRecursos(FALLBACK_RECURSOS);
+        setActiveTab(FALLBACK_RECURSOS[0].key);
+      } finally {
+        setRecursosLoading(false);
+      }
+    }
+    loadRecursos();
+  }, []);
 
   // Si no tiene permisos, mostrar mensaje de error
   if (!permissionsLoading && !canAccess('roles')) {
@@ -267,29 +293,6 @@ export default function RolesPublicPage() {
     } finally { setLoading(false); }
   }
 
-  // load recursos for tabs
-  useEffect(() => {
-    async function loadRecursos() {
-      try {
-        const r = await fetch('/api/permisos/resources');
-        const j = await r.json();
-        if (j.success) {
-          setRecursos(j.data.recursos || []);
-          setActiveTab((j.data.recursos && j.data.recursos[0] && j.data.recursos[0].key) || null);
-        } else {
-          setRecursos(FALLBACK_RECURSOS);
-          setActiveTab(FALLBACK_RECURSOS[0].key);
-        }
-      } catch (e) {
-        setRecursos(FALLBACK_RECURSOS);
-        setActiveTab(FALLBACK_RECURSOS[0].key);
-      } finally {
-        setRecursosLoading(false);
-      }
-    }
-    loadRecursos();
-  }, []);
-
   function getAuthHeaders(): Record<string, string> {
     try {
       const raw = localStorage.getItem('token');
@@ -334,9 +337,6 @@ export default function RolesPublicPage() {
       throw err;
     }
   }
-
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [roleToDelete, setRoleToDelete] = useState<string | null>(null);
 
   function askDelete(id?: string) {
     if (!id) return;

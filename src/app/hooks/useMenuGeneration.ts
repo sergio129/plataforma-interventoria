@@ -34,7 +34,9 @@ export function useMenuGeneration() {
 
   const fetchUserPermissions = async () => {
     if (isRequesting) return; // Evitar múltiples peticiones simultaneas
+    
     try {
+      setIsRequesting(true);
       setLoading(true);
       const token = localStorage.getItem('token');
       if (!token) {
@@ -57,7 +59,6 @@ export function useMenuGeneration() {
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
-          console.log('Permisos obtenidos:', data.data); // Debug
           setPermissions(data.data || []);
         } else {
           console.error('Error en respuesta de permisos:', data);
@@ -69,6 +70,7 @@ export function useMenuGeneration() {
       console.error('Error fetching permissions:', error);
     } finally {
       setLoading(false);
+      setIsRequesting(false);
     }
   };
 
@@ -79,17 +81,12 @@ export function useMenuGeneration() {
     ];
 
     if (!permissions || loading) {
-      console.log('No hay permisos o está cargando:', { permissions, loading });
       return items;
     }
-
-    console.log('Generando menú con permisos:', permissions);
 
     // Generar elementos del menú basándose en los permisos reales de la base de datos
     permissions.forEach((permission: Permission) => {
       const { recurso, acciones } = permission;
-      
-      console.log(`Procesando recurso: ${recurso}, acciones:`, acciones);
       
       // Validar que acciones existe y es un array
       if (acciones && Array.isArray(acciones) && acciones.length > 0) {
@@ -98,12 +95,9 @@ export function useMenuGeneration() {
           // Evitar duplicados
           const exists = items.some(item => item.href === menuConfig.href);
           if (!exists) {
-            console.log(`Agregando al menú: ${menuConfig.label}`);
             items.push(menuConfig);
           }
         }
-      } else {
-        console.log(`Recurso ${recurso} sin acciones válidas:`, acciones);
       }
     });
 
@@ -122,25 +116,36 @@ export function useMenuGeneration() {
     if (canManageUsers || canManageConfig || userRole === 'administrador' || userRole === 'Super Administrador') {
       const rolesExists = items.some(item => item.href === '/roles');
       if (!rolesExists) {
-        console.log('Agregando roles al menú');
         items.push({ href: '/roles', label: 'Roles', icon: '🔐', order: 6 });
       }
     }
 
     // Ordenar elementos del menú
-    const sortedItems = items.sort((a, b) => a.order - b.order);
-    console.log('Menú final generado:', sortedItems);
-    return sortedItems;
+    return items.sort((a, b) => a.order - b.order);
   }, [permissions, loading, userRole]);
 
   const canAccess = (resource: string): boolean => {
     if (!permissions) return false;
-    // Un usuario puede acceder si tiene cualquier acción en el recurso
-    const hasAccess = permissions.some((p: Permission) => 
+    
+    // Caso especial para roles - basado en si puede gestionar usuarios o configuración
+    if (resource === 'roles') {
+      const canManageUsers = permissions.some((p: Permission) => 
+        p.recurso === 'usuarios' && 
+        (p.acciones.includes('crear') || p.acciones.includes('actualizar') || p.acciones.includes('eliminar'))
+      );
+      
+      const canManageConfig = permissions.some((p: Permission) => 
+        p.recurso === 'configuracion' && 
+        p.acciones.includes('configurar')
+      );
+      
+      return canManageUsers || canManageConfig || userRole === 'administrador' || userRole === 'Super Administrador';
+    }
+    
+    // Para otros recursos, verificar directamente
+    return permissions.some((p: Permission) => 
       p.recurso === resource && p.acciones && Array.isArray(p.acciones) && p.acciones.length > 0
     );
-    console.log(`canAccess(${resource}):`, hasAccess);
-    return hasAccess;
   };
 
   const hasPermission = (resource: string, action: string): boolean => {
