@@ -17,6 +17,7 @@ export enum TipoPermiso {
   ELIMINAR = 'eliminar',
   APROBAR = 'aprobar',
   EXPORTAR = 'exportar',
+  ACCEDER = 'acceder',
   CONFIGURAR = 'configurar'
 }
 
@@ -242,7 +243,7 @@ export class PermisosManager {
           permisos: [
             {
               recurso: TipoRecurso.USUARIOS,
-              acciones: [TipoPermiso.CREAR, TipoPermiso.LEER, TipoPermiso.ACTUALIZAR]
+              acciones: [TipoPermiso.CREAR, TipoPermiso.LEER, TipoPermiso.ACTUALIZAR, TipoPermiso.ACCEDER]
             },
             {
               recurso: TipoRecurso.PROYECTOS,
@@ -250,11 +251,11 @@ export class PermisosManager {
             },
             {
               recurso: TipoRecurso.DOCUMENTOS,
-              acciones: [TipoPermiso.LEER, TipoPermiso.CREAR, TipoPermiso.ACTUALIZAR, TipoPermiso.APROBAR]
+              acciones: [TipoPermiso.LEER, TipoPermiso.ACCEDER, TipoPermiso.CREAR, TipoPermiso.ACTUALIZAR, TipoPermiso.APROBAR]
             },
             {
               recurso: TipoRecurso.REPORTES,
-              acciones: [TipoPermiso.LEER, TipoPermiso.CREAR, TipoPermiso.EXPORTAR]
+              acciones: [TipoPermiso.LEER, TipoPermiso.ACCEDER, TipoPermiso.CREAR, TipoPermiso.EXPORTAR]
             }
           ]
         },

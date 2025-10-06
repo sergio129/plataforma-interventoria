@@ -13,6 +13,7 @@ function RoleForm({ initial, onSave, onCancel }: { initial?: Rol; onSave: (r: Ro
   const [descripcion, setDescripcion] = useState(initial?.descripcion || '');
   const [activo, setActivo] = useState(initial?.activo ?? true);
   const [permisos, setPermisos] = useState<Permiso[]>(initial?.permisos || []);
+  const [recursos, setRecursos] = useState<{ key: string; label: string }[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [nombreError, setNombreError] = useState<string | null>(null);
@@ -21,11 +22,16 @@ function RoleForm({ initial, onSave, onCancel }: { initial?: Rol; onSave: (r: Ro
   useEffect(() => {
     if (!initial) {
       // inicializar permisos con recursos y vacíos
-      setPermisos([{
-        recurso: 'configuracion',
-        acciones: []
-      }]);
+      setPermisos([ ]);
     }
+    async function loadResources() {
+      try {
+        const res = await fetch('/api/permisos/resources');
+        const j = await res.json();
+        if (j.success) setRecursos(j.data.recursos || []);
+      } catch (e) {}
+    }
+    loadResources();
   }, [initial]);
 
   function toggleAccion(recurso: string, accion: string) {
@@ -65,7 +71,7 @@ function RoleForm({ initial, onSave, onCancel }: { initial?: Rol; onSave: (r: Ro
     } finally { setSaving(false); }
   }
 
-  const acciones = ['leer','crear','actualizar','eliminar','aprobar','exportar','configurar'];
+  const acciones = ['leer','crear','actualizar','eliminar','aprobar','exportar','configurar','acceder'];
 
   return (
     <form onSubmit={submit} className="space-y-6">
@@ -114,16 +120,23 @@ function RoleForm({ initial, onSave, onCancel }: { initial?: Rol; onSave: (r: Ro
       </div>
       <div className="space-y-2">
         <strong className="block text-sm font-semibold text-gray-700 mb-1">Permisos</strong>
-        <div className="grid grid-cols-4 gap-3">
-          {acciones.map(a => {
-            const permiso = permisos.find(p => p.recurso === 'configuracion');
-            const checked = permiso ? permiso.acciones.includes(a) : false;
-            return (
-              <label key={a} className="flex items-center gap-2 text-gray-700 font-medium">
-                <input type="checkbox" checked={checked} onChange={() => toggleAccion('configuracion', a)} /> {a}
-              </label>
-            );
-          })}
+        <div className="grid grid-cols-1 gap-3">
+          {recursos.map(r => (
+            <div key={r.key} className="border rounded-md p-3">
+              <div className="font-semibold mb-2">{r.label}</div>
+              <div className="grid grid-cols-4 gap-2">
+                {acciones.map(a => {
+                  const permiso = permisos.find(p => p.recurso === r.key);
+                  const checked = permiso ? permiso.acciones.includes(a) : false;
+                  return (
+                    <label key={a + r.key} className="flex items-center gap-2 text-gray-700 font-medium">
+                      <input type="checkbox" checked={checked} onChange={() => toggleAccion(r.key, a)} /> {a}
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
       <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200">
