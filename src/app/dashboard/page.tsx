@@ -23,7 +23,7 @@ export default function DashboardPage() {
 
   const menu = [
     { href: '/dashboard', label: 'Inicio', roles: ['administrador','interventor','contratista','supervisor'] },
-    { href: '/dashboard/roles', label: 'Roles', roles: ['administrador'] },
+    { href: '/roles', label: 'Roles', roles: ['administrador'] },
     { href: '/dashboard/usuarios', label: 'Usuarios', roles: ['administrador'] },
     { href: '/dashboard/proyectos', label: 'Proyectos', roles: ['administrador','interventor','contratista','supervisor'] }
   ];

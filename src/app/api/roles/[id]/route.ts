@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '../../../../lib/database';
 import { Rol, PermisosManager, TipoRecurso, TipoPermiso } from '../../../../lib/models/Rol';
+import { Usuario } from '../../../../lib/models/Usuario';
 import mongoose from 'mongoose';
 import { getUserFromRequest } from '../../../../lib/auth';
 
@@ -68,6 +69,12 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
     const tienePermiso = await PermisosManager.usuarioTienePermiso(payload.userId, TipoRecurso.CONFIGURACION, TipoPermiso.CONFIGURAR);
     if (!tienePermiso && payload.tipoUsuario !== 'administrador') {
       return NextResponse.json({ success: false, message: 'No autorizado' }, { status: 403 });
+    }
+
+    // Verificar si hay usuarios asociados a este rol
+    const usuariosConRol = await Usuario.countDocuments({ roles: id });
+    if (usuariosConRol > 0) {
+      return NextResponse.json({ success: false, message: 'No se puede eliminar: existen usuarios con este rol' }, { status: 409 });
     }
 
     const rol = await Rol.findByIdAndDelete(id);

@@ -24,11 +24,17 @@ function RoleForm({ initial, onSave, onCancel }: { initial?: Rol; onSave: (r: Ro
   }, [initial]);
 
   function toggleAccion(recurso: string, accion: string) {
-    setPermisos(prev => prev.map(p => {
-      if (p.recurso !== recurso) return p;
-      const tiene = p.acciones.includes(accion);
-      return { ...p, acciones: tiene ? p.acciones.filter(a => a !== accion) : [...p.acciones, accion] };
-    }));
+    setPermisos(prev => {
+      const idx = prev.findIndex(p => p.recurso === recurso);
+      if (idx === -1) {
+        return [...prev, { recurso, acciones: [accion] }];
+      }
+      return prev.map(p => {
+        if (p.recurso !== recurso) return p;
+        const tiene = p.acciones.includes(accion);
+        return { ...p, acciones: tiene ? p.acciones.filter(a => a !== accion) : [...p.acciones, accion] };
+      });
+    });
   }
 
   async function submit(e: React.FormEvent) {
@@ -57,11 +63,15 @@ function RoleForm({ initial, onSave, onCancel }: { initial?: Rol; onSave: (r: Ro
       <div>
         <strong>Permisos</strong>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginTop: 8 }}>
-          {acciones.map(a => (
-            <label key={a} style={{ fontSize: 14 }}>
-              <input type="checkbox" checked={permisos.some(p => p.acciones.includes(a))} onChange={() => toggleAccion('configuracion', a)} /> {a}
-            </label>
-          ))}
+          {acciones.map(a => {
+            const permiso = permisos.find(p => p.recurso === 'configuracion');
+            const checked = permiso ? permiso.acciones.includes(a) : false;
+            return (
+              <label key={a} style={{ fontSize: 14 }}>
+                <input type="checkbox" checked={checked} onChange={() => toggleAccion('configuracion', a)} /> {a}
+              </label>
+            );
+          })}
         </div>
       </div>
 
@@ -98,12 +108,18 @@ export default function RolesPublicPage() {
 
   function getAuthHeaders(): Record<string, string> {
     try {
-      const token = localStorage.getItem('token');
+      const raw = localStorage.getItem('token');
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (!token) return headers;
-      const parsed = JSON.parse(token);
-      const value = parsed?.token || token;
-      if (value) headers['Authorization'] = `Bearer ${value}`;
+      if (!raw) return headers;
+      // Intentar parsear JSON; si falla, asumir token crudo (JWT)
+      let tokenValue: string | null = null;
+      try {
+        const parsed = JSON.parse(raw);
+        tokenValue = parsed?.token || (typeof parsed === 'string' ? parsed : null);
+      } catch {
+        tokenValue = raw; // token crudo
+      }
+      if (tokenValue) headers['Authorization'] = `Bearer ${tokenValue}`;
       return headers;
     } catch {
       return { 'Content-Type': 'application/json' };
@@ -154,7 +170,7 @@ export default function RolesPublicPage() {
 
   const items = [
     { href: '/dashboard', label: 'Inicio' },
-    { href: '/dashboard/roles', label: 'Roles' },
+    { href: '/roles', label: 'Roles' },
     { href: '/dashboard/usuarios', label: 'Usuarios' }
   ];
 
