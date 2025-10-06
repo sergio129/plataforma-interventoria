@@ -1,25 +1,52 @@
-.pi-menu {
-  width: 220px;
-  padding: 20px;
-  background: linear-gradient(180deg, #0f172a 0%, #111827 100%);
-  color: #e6eef8;
-  border-radius: 8px;
+.menu {
+  background: linear-gradient(120deg, #1e293b 80%, #2563eb 100%);
+  border-radius: 18px;
+  padding: 28px 0 28px 0;
+  box-shadow: 0 12px 48px rgba(37,99,235,0.13);
+  width: 240px;
+  min-height: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
-.pi-menu-logo {
-  font-weight: 700;
-  font-size: 18px;
-  margin-bottom: 16px;
+.menu-title {
+  font-size: 1.35rem;
+  font-weight: bold;
+  color: #fff;
+  margin-bottom: 22px;
+  padding-left: 32px;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
-.pi-menu ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px }
-.pi-menu-link {
-  display: block;
-  padding: 10px 12px;
-  border-radius: 8px;
-  color: #e6eef8;
+.menu-title .menu-icon {
+  font-size: 1.3em;
+  color: #38bdf8;
+}
+.menu-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.menu-list li {
+  margin-bottom: 0;
+}
+.menu-list a {
+  color: #e0e7ef;
   text-decoration: none;
-  transition: background 0.12s ease, transform 0.08s ease;
+  font-size: 1.07rem;
+  font-weight: 500;
+  padding: 10px 16px;
+  border-radius: 10px;
+  display: block;
+  transition: background 0.18s, color 0.18s, box-shadow 0.18s;
 }
-.pi-menu-link:hover { background: rgba(255,255,255,0.04); transform: translateX(4px) }
-.pi-main { display: flex; gap: 24px; padding: 24px }
-.pi-card { background: white; padding: 18px; border-radius: 10px; box-shadow: 0 8px 30px rgba(2,6,23,0.08) }
-.pi-header { display:flex; align-items:center; justify-content:space-between }
+.menu-list a:hover {
+  background: linear-gradient(90deg,#4f46e5,#06b6d4);
+  color: #fff;
+  box-shadow: 0 2px 12px rgba(37,99,235,0.10);
+}

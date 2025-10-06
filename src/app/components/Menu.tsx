@@ -7,15 +7,16 @@ interface MenuItem { href: string; label: string }
 
 export default function Menu({ items }: { items: MenuItem[] }) {
   return (
-    <aside className="pi-menu">
-      <div className="pi-menu-logo">Plataforma</div>
-      <nav>
-        <ul>
-          {items.map(i => (
-            <li key={i.href}><Link href={i.href} className="pi-menu-link">{i.label}</Link></li>
-          ))}
-        </ul>
-      </nav>
-    </aside>
+    <div className="menu">
+      <div className="menu-title">
+        <span className="menu-icon">📋</span>
+        Plataforma
+      </div>
+      <ul className="menu-list">
+        {items.map(i => (
+          <li key={i.href}><Link href={i.href} className="menu-link">{i.label}</Link></li>
+        ))}
+      </ul>
+    </div>
   );
 }
