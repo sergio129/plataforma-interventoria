@@ -8,12 +8,13 @@ import './roles.css';
 interface Permiso { recurso: string; acciones: string[] }
 interface Rol { _id?: string; nombre: string; descripcion: string; activo: boolean; permisos?: Permiso[] }
 
-function RoleForm({ initial, onSave, onCancel }: { initial?: Rol; onSave: (r: Rol) => void; onCancel: () => void }) {
+function RoleForm({ initial, onSave, onCancel, tabbed }: { initial?: Rol; onSave: (r: Rol) => void; onCancel: () => void; tabbed?: boolean }) {
   const [nombre, setNombre] = useState(initial?.nombre || '');
   const [descripcion, setDescripcion] = useState(initial?.descripcion || '');
   const [activo, setActivo] = useState(initial?.activo ?? true);
   const [permisos, setPermisos] = useState<Permiso[]>(initial?.permisos || []);
   const [recursos, setRecursos] = useState<{ key: string; label: string }[]>([]);
+  const [currentTab, setCurrentTab] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [nombreError, setNombreError] = useState<string | null>(null);
@@ -32,7 +33,15 @@ function RoleForm({ initial, onSave, onCancel }: { initial?: Rol; onSave: (r: Ro
       } catch (e) {}
     }
     loadResources();
+    // set default tab to first recurso when loaded
+    // (we'll set when recursos change below)
   }, [initial]);
+
+  useEffect(() => {
+    if (recursos && recursos.length > 0 && !currentTab) {
+      setCurrentTab(recursos[0].key);
+    }
+  }, [recursos]);
 
   function toggleAccion(recurso: string, accion: string) {
     setPermisos(prev => {
@@ -120,24 +129,55 @@ function RoleForm({ initial, onSave, onCancel }: { initial?: Rol; onSave: (r: Ro
       </div>
       <div className="space-y-2">
         <strong className="block text-sm font-semibold text-gray-700 mb-1">Permisos</strong>
-        <div className="grid grid-cols-1 gap-3">
-          {recursos.map(r => (
-            <div key={r.key} className="border rounded-md p-3">
-              <div className="font-semibold mb-2">{r.label}</div>
-              <div className="grid grid-cols-4 gap-2">
-                {acciones.map(a => {
-                  const permiso = permisos.find(p => p.recurso === r.key);
-                  const checked = permiso ? permiso.acciones.includes(a) : false;
-                  return (
-                    <label key={a + r.key} className="flex items-center gap-2 text-gray-700 font-medium">
-                      <input type="checkbox" checked={checked} onChange={() => toggleAccion(r.key, a)} /> {a}
-                    </label>
-                  );
-                })}
-              </div>
+        {tabbed ? (
+          <div>
+            <div className="tabs">
+              {recursos.map(r => (
+                <button key={r.key} type="button" className={`tab ${currentTab === r.key ? 'active' : ''}`} onClick={() => setCurrentTab(r.key)}>{r.label}</button>
+              ))}
             </div>
-          ))}
-        </div>
+            <div className="tab-content">
+              {recursos.map(r => {
+                if (r.key !== currentTab) return null;
+                return (
+                  <div key={r.key} className="border rounded-md p-3">
+                    <div className="font-semibold mb-2">{r.label}</div>
+                    <div className="grid grid-cols-4 gap-2">
+                      {acciones.map(a => {
+                        const permiso = permisos.find(p => p.recurso === r.key);
+                        const checked = permiso ? permiso.acciones.includes(a) : false;
+                        return (
+                          <label key={a + r.key} className="flex items-center gap-2 text-gray-700 font-medium">
+                            <input type="checkbox" checked={checked} onChange={() => toggleAccion(r.key, a)} /> {a}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-3">
+            {recursos.map(r => (
+              <div key={r.key} className="border rounded-md p-3">
+                <div className="font-semibold mb-2">{r.label}</div>
+                <div className="grid grid-cols-4 gap-2">
+                  {acciones.map(a => {
+                    const permiso = permisos.find(p => p.recurso === r.key);
+                    const checked = permiso ? permiso.acciones.includes(a) : false;
+                    return (
+                      <label key={a + r.key} className="flex items-center gap-2 text-gray-700 font-medium">
+                        <input type="checkbox" checked={checked} onChange={() => toggleAccion(r.key, a)} /> {a}
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
       <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200">
         <button type="button" onClick={onCancel}
@@ -309,17 +349,26 @@ export default function RolesPublicPage() {
           )}
 
           {showForm && (
-            <div className="modal-overlay">
-                <div className="modal-card">
-                  <div className="modal-header" style={{ justifyContent: 'flex-start', gap: 12 }}>
-                    <span className="modal-icon">📝</span>
-                    <h3 style={{ margin: 0, flex: 1, textAlign: 'left' }}>{editing ? 'Editar Rol' : 'Nuevo Rol'}</h3>
-                    <button className="close-btn" onClick={() => { setShowForm(false); setEditing(null); }}>&times;</button>
+            <div className="fs-modal-overlay" role="dialog" aria-modal="true" onClick={() => { setShowForm(false); setEditing(null); }}>
+              <div className="fs-modal" onClick={e => e.stopPropagation()}>
+                <div className="modal-header">
+                  <span className="modal-icon">📝</span>
+                  <h3 style={{ margin: 0, flex: 1, textAlign: 'left' }}>{editing ? 'Editar Rol' : 'Nuevo Rol'}</h3>
+                  <button className="close-btn" onClick={() => { setShowForm(false); setEditing(null); }} aria-label="Cerrar">&times;</button>
+                </div>
+                <div className="modal-body">
+                  <div className="left">
+                    {/* Opcional: listado rápido de roles o recursos - por ahora dejamos espacio para navegación */}
+                    <div style={{ padding: 8, color: '#64748b', fontWeight: 600 }}>Módulos</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {/* RoleForm fetches recursos and renders tabs; aquí solo dejamos un placeholder */}
+                    </div>
                   </div>
-                  <div className="modal-body">
-                    <RoleForm initial={editing || undefined} onSave={saveRole} onCancel={() => { setShowForm(false); setEditing(null); }} />
+                  <div className="right">
+                    <RoleForm tabbed initial={editing || undefined} onSave={saveRole} onCancel={() => { setShowForm(false); setEditing(null); }} />
                   </div>
                 </div>
+              </div>
             </div>
           )}
         </div>
