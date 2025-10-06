@@ -8,12 +8,11 @@ import './roles.css';
 interface Permiso { recurso: string; acciones: string[] }
 interface Rol { _id?: string; nombre: string; descripcion: string; activo: boolean; permisos?: Permiso[] }
 
-function RoleForm({ initial, onSave, onCancel, tabbed }: { initial?: Rol; onSave: (r: Rol) => void; onCancel: () => void; tabbed?: boolean }) {
+function RoleForm({ initial, onSave, onCancel, tabbed, recursos, externalTab, onExternalTabChange }: { initial?: Rol; onSave: (r: Rol) => void; onCancel: () => void; tabbed?: boolean; recursos?: { key: string; label: string }[]; externalTab?: string | null; onExternalTabChange?: (t: string) => void }) {
   const [nombre, setNombre] = useState(initial?.nombre || '');
   const [descripcion, setDescripcion] = useState(initial?.descripcion || '');
   const [activo, setActivo] = useState(initial?.activo ?? true);
   const [permisos, setPermisos] = useState<Permiso[]>(initial?.permisos || []);
-  const [recursos, setRecursos] = useState<{ key: string; label: string }[]>([]);
   const [currentTab, setCurrentTab] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -22,26 +21,14 @@ function RoleForm({ initial, onSave, onCancel, tabbed }: { initial?: Rol; onSave
 
   useEffect(() => {
     if (!initial) {
-      // inicializar permisos con recursos y vacíos
-      setPermisos([ ]);
+      setPermisos([]);
     }
-    async function loadResources() {
-      try {
-        const res = await fetch('/api/permisos/resources');
-        const j = await res.json();
-        if (j.success) setRecursos(j.data.recursos || []);
-      } catch (e) {}
-    }
-    loadResources();
-    // set default tab to first recurso when loaded
-    // (we'll set when recursos change below)
   }, [initial]);
 
+  // sync external tab selection (from left column)
   useEffect(() => {
-    if (recursos && recursos.length > 0 && !currentTab) {
-      setCurrentTab(recursos[0].key);
-    }
-  }, [recursos]);
+    if (externalTab) setCurrentTab(externalTab);
+  }, [externalTab]);
 
   function toggleAccion(recurso: string, accion: string) {
     setPermisos(prev => {
@@ -132,12 +119,12 @@ function RoleForm({ initial, onSave, onCancel, tabbed }: { initial?: Rol; onSave
         {tabbed ? (
           <div>
             <div className="tabs">
-              {recursos.map(r => (
-                <button key={r.key} type="button" className={`tab ${currentTab === r.key ? 'active' : ''}`} onClick={() => setCurrentTab(r.key)}>{r.label}</button>
+              {(recursos || []).map(r => (
+                <button key={r.key} type="button" className={`tab ${currentTab === r.key ? 'active' : ''}`} onClick={() => { setCurrentTab(r.key); if (onExternalTabChange) onExternalTabChange(r.key); }}>{r.label}</button>
               ))}
             </div>
             <div className="tab-content">
-              {recursos.map(r => {
+              {(recursos || []).map(r => {
                 if (r.key !== currentTab) return null;
                 return (
                   <div key={r.key} className="border rounded-md p-3">
@@ -160,7 +147,7 @@ function RoleForm({ initial, onSave, onCancel, tabbed }: { initial?: Rol; onSave
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-3">
-            {recursos.map(r => (
+            {(recursos || []).map(r => (
               <div key={r.key} className="border rounded-md p-3">
                 <div className="font-semibold mb-2">{r.label}</div>
                 <div className="grid grid-cols-4 gap-2">
@@ -199,6 +186,8 @@ export default function RolesPublicPage() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Rol | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [recursos, setRecursos] = useState<{ key: string; label: string }[]>([]);
+  const [activeTab, setActiveTab] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -216,6 +205,21 @@ export default function RolesPublicPage() {
       setError(err?.message || 'Error de red');
     } finally { setLoading(false); }
   }
+
+  // load recursos for tabs
+  useEffect(() => {
+    async function loadRecursos() {
+      try {
+        const r = await fetch('/api/permisos/resources');
+        const j = await r.json();
+        if (j.success) {
+          setRecursos(j.data.recursos || []);
+          setActiveTab((j.data.recursos && j.data.recursos[0] && j.data.recursos[0].key) || null);
+        }
+      } catch (e) {}
+    }
+    loadRecursos();
+  }, []);
 
   function getAuthHeaders(): Record<string, string> {
     try {
@@ -358,14 +362,15 @@ export default function RolesPublicPage() {
                 </div>
                 <div className="modal-body">
                   <div className="left">
-                    {/* Opcional: listado rápido de roles o recursos - por ahora dejamos espacio para navegación */}
                     <div style={{ padding: 8, color: '#64748b', fontWeight: 600 }}>Módulos</div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                      {/* RoleForm fetches recursos and renders tabs; aquí solo dejamos un placeholder */}
+                      {recursos.map(r => (
+                        <button key={r.key} type="button" className={`tab ${activeTab === r.key ? 'active' : ''}`} onClick={() => setActiveTab(r.key)} style={{ textAlign: 'left', padding: '8px 12px' }}>{r.label}</button>
+                      ))}
                     </div>
                   </div>
                   <div className="right">
-                    <RoleForm tabbed initial={editing || undefined} onSave={saveRole} onCancel={() => { setShowForm(false); setEditing(null); }} />
+                    <RoleForm tabbed recursos={recursos} externalTab={activeTab} onExternalTabChange={t => setActiveTab(t)} initial={editing || undefined} onSave={saveRole} onCancel={() => { setShowForm(false); setEditing(null); }} />
                   </div>
                 </div>
               </div>
