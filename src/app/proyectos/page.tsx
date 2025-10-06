@@ -1,2 +1,143 @@
 "use client";
-export { default } from '../dashboard/proyectos/page';
+import React, { useEffect, useState } from 'react';
+import DynamicMenu from '../components/DynamicMenu';
+import UserProfile from '../components/UserProfile';
+import '../roles/roles.css';
+import { useMenuGeneration } from '../hooks/useMenuGeneration';
+
+interface Proyecto {
+  _id?: string;
+  nombre: string;
+  descripcion: string;
+  estado: 'activo' | 'inactivo' | 'completado';
+  fechaInicio: string;
+  fechaFin?: string;
+  interventor?: string;
+  contratista?: string;
+}
+
+export default function ProyectosPage() {
+  const [proyectos, setProyectos] = useState<Proyecto[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { loading: permissionsLoading, canAccess } = useMenuGeneration();
+
+  useEffect(() => {
+    if (!permissionsLoading) {
+      if (canAccess('proyectos')) {
+        // Simulando carga de proyectos
+        setTimeout(() => {
+          setProyectos([
+            {
+              _id: '1',
+              nombre: 'Construcción Edificio A',
+              descripcion: 'Proyecto de construcción de edificio residencial',
+              estado: 'activo',
+              fechaInicio: '2024-01-15',
+              interventor: 'María Elena González',
+              contratista: 'Carlos Alberto Mendoza'
+            },
+            {
+              _id: '2',
+              nombre: 'Renovación Centro Comercial',
+              descripcion: 'Renovación integral del centro comercial',
+              estado: 'activo',
+              fechaInicio: '2024-02-01',
+              interventor: 'Ana Sofía Herrera',
+              contratista: 'Juan Carlos Rodríguez'
+            }
+          ]);
+          setLoading(false);
+        }, 1000);
+      } else {
+        setLoading(false);
+      }
+    }
+  }, [permissionsLoading, canAccess]);
+
+  // Filtrar menú basado en permisos reales
+  // Menú se genera dinámicamente desde DynamicMenu
+
+  // Si no tiene permisos, mostrar mensaje de error
+  if (!permissionsLoading && !canAccess('proyectos')) {
+    return (
+      <div className="roles-page" style={{ padding: 28 }}>
+        <aside style={{ position: 'sticky', top: 24 }}>
+          <DynamicMenu />
+        </aside>
+        <main className="roles-main">
+          <div style={{ padding: 0 }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:24 }}>
+              <h2>Proyectos</h2>
+              <div><UserProfile /></div>
+            </div>
+            <div className="message error">
+              No tienes permisos para acceder a la gestión de proyectos. 
+              Por favor contacta al administrador del sistema.
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  return (
+    <div className="roles-page" style={{ padding: 28 }}>
+      <aside style={{ position: 'sticky', top: 24 }}>
+        <DynamicMenu />
+      </aside>
+
+      <main className="roles-main">
+        <div style={{ padding: 0 }}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:24 }}>
+            <h2>Proyectos</h2>
+            <div>
+              <UserProfile />
+            </div>
+          </div>
+          
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+            <button className="btn primary">Nuevo Proyecto</button>
+          </div>
+
+          {loading ? (
+            <div>Cargando proyectos...</div>
+          ) : (
+            <table className="roles-table">
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Descripción</th>
+                  <th>Estado</th>
+                  <th>Fecha Inicio</th>
+                  <th>Interventor</th>
+                  <th>Contratista</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {proyectos.map(proyecto => (
+                  <tr key={proyecto._id}>
+                    <td>{proyecto.nombre}</td>
+                    <td>{proyecto.descripcion}</td>
+                    <td>
+                      <span className={`badge ${proyecto.estado === 'activo' ? 'badge-success' : proyecto.estado === 'completado' ? 'badge-info' : 'badge-warning'}`}>
+                        {proyecto.estado}
+                      </span>
+                    </td>
+                    <td>{new Date(proyecto.fechaInicio).toLocaleDateString()}</td>
+                    <td>{proyecto.interventor}</td>
+                    <td>{proyecto.contratista}</td>
+                    <td>
+                      <button className="btn ghost">Ver</button>
+                      <button className="btn ghost">Editar</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </main>
+    </div>
+  );
+}

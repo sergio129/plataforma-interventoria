@@ -1,10 +1,11 @@
 "use client";
 import React, { useEffect, useState } from 'react';
-import Menu from '../components/Menu';
 import UserProfile from '../components/UserProfile';
 import ConfirmModal from './ConfirmModal';
 import Toast from './Toast';
 import './roles.css';
+import DynamicMenu from '../components/DynamicMenu';
+import { useMenuGeneration } from '../hooks/useMenuGeneration';
 
 interface Permiso { recurso: string; acciones: string[] }
 interface Rol { _id?: string; nombre: string; descripcion: string; activo: boolean; permisos?: Permiso[] }
@@ -199,8 +200,59 @@ export default function RolesPublicPage() {
   ];
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  
+  const { loading: permissionsLoading, canAccess } = useMenuGeneration();
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { 
+    if (!permissionsLoading) {
+      if (canAccess('roles')) {
+        load();
+      } else {
+        setLoading(false);
+        setError('No tienes permisos para acceder a la gestión de roles');
+      }
+    }
+  }, [permissionsLoading, canAccess]);
+
+  // Si no tiene permisos, mostrar mensaje de error
+  if (!permissionsLoading && !canAccess('roles')) {
+    return (
+      <div className="roles-page">
+        <aside style={{ position: 'sticky', top: 24 }}>
+          <DynamicMenu />
+        </aside>
+        <main className="roles-main">
+          <div className="roles-card">
+            <div className="roles-header">
+              <h1>Gestión de Roles</h1>
+              <div style={{ marginLeft: 8 }}>
+                <React.Suspense fallback={<div />}>
+                  <UserProfile />
+                </React.Suspense>
+              </div>
+            </div>
+            <div className="message error">
+              No tienes permisos para acceder a la gestión de roles. 
+              Por favor contacta al administrador del sistema.
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Si está cargando permisos, mostrar loading
+  if (permissionsLoading) {
+    return (
+      <div className="roles-page">
+        <main className="roles-main">
+          <div className="roles-card" style={{ textAlign: 'center', padding: '2rem' }}>
+            <div>Verificando permisos...</div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   async function load() {
     setLoading(true);
@@ -313,16 +365,10 @@ export default function RolesPublicPage() {
     }
   }
 
-    const items = [
-      { href: '/dashboard', label: 'Inicio' },
-      { href: '/roles', label: 'Roles' },
-      { href: '/usuarios', label: 'Usuarios' }
-    ];
-
   return (
     <div className="roles-page">
       <aside style={{ position: 'sticky', top: 24 }}>
-        <Menu items={items} />
+        <DynamicMenu />
       </aside>
 
       <main className="roles-main">

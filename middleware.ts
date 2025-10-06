@@ -6,9 +6,9 @@ const protectedRoutes: Record<string, string[]> = {
   '/dashboard': [], // Accesible para todos los usuarios autenticados
   '/roles': ['administrador'], // Solo administradores
   '/usuarios': ['administrador'], // Solo administradores  
-  '/dashboard/usuarios': ['administrador'], // Solo administradores
   '/proyectos': ['administrador', 'interventor', 'contratista', 'supervisor'], // Múltiples roles
-  '/dashboard/proyectos': ['administrador', 'interventor', 'contratista', 'supervisor'], // Múltiples roles
+  '/documentos': ['administrador', 'interventor', 'contratista', 'supervisor'], // Múltiples roles
+  '/reportes': ['administrador', 'interventor', 'supervisor'], // Solo roles que pueden generar reportes
 };
 
 function getUserFromToken(token: string): { tipoUsuario: string } | null {

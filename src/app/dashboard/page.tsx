@@ -2,9 +2,9 @@
 import React from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import Menu from '../components/Menu';
+import DynamicMenu from '../components/DynamicMenu';
 import UserProfile from '../components/UserProfile';
-import { usePermissions } from '../hooks/usePermissions';
+import { useMenuGeneration } from '../hooks/useMenuGeneration';
 
 function getUserRole(): string {
   try {
@@ -25,15 +25,9 @@ export default function DashboardPage() {
   const role = getUserRole();
   const searchParams = useSearchParams();
   const error = searchParams.get('error');
-  const { loading, canAccessUsers, canAccessRoles, canAccessProjects } = usePermissions();
+  const { loading, menuItems, canAccess } = useMenuGeneration();
 
-  // Filtrar menú basado en permisos reales
-  const menuItems = [
-    { href: '/dashboard', label: 'Inicio' },
-    ...(canAccessProjects() ? [{ href: '/dashboard/proyectos', label: 'Proyectos' }] : []),
-    ...(canAccessUsers() ? [{ href: '/usuarios', label: 'Usuarios' }] : []),
-    ...(canAccessRoles() ? [{ href: '/roles', label: 'Roles' }] : [])
-  ];
+  // Menú se genera dinámicamente
 
   if (loading) {
     return <div>Cargando permisos...</div>;
@@ -44,7 +38,7 @@ export default function DashboardPage() {
       <div>
         {/* Menu lateral */}
         <div style={{ position: 'sticky', top: 24 }}>
-          <Menu items={menuItems} />
+          <DynamicMenu />
         </div>
       </div>
 
@@ -105,7 +99,7 @@ export default function DashboardPage() {
           <h2>Acciones Rápidas</h2>
           <p style={{ marginBottom: 20 }}>Accede rápidamente a las funciones más utilizadas</p>
           <div className="pi-quick-actions">
-            {canAccessUsers() && (
+            {canAccess('usuarios') && (
               <Link href="/usuarios" className="pi-quick-action">
                 <div className="pi-quick-action-icon">👤</div>
                 <div className="pi-quick-action-content">
@@ -114,7 +108,7 @@ export default function DashboardPage() {
                 </div>
               </Link>
             )}
-            {canAccessRoles() && (
+            {canAccess('roles') && (
               <Link href="/roles" className="pi-quick-action">
                 <div className="pi-quick-action-icon">🔐</div>
                 <div className="pi-quick-action-content">
@@ -123,8 +117,8 @@ export default function DashboardPage() {
                 </div>
               </Link>
             )}
-            {canAccessProjects() && (
-              <Link href="/dashboard/proyectos" className="pi-quick-action">
+            {canAccess('proyectos') && (
+              <Link href="/proyectos" className="pi-quick-action">
                 <div className="pi-quick-action-icon">📁</div>
                 <div className="pi-quick-action-content">
                   <h4>Ver Proyectos</h4>
@@ -132,13 +126,24 @@ export default function DashboardPage() {
                 </div>
               </Link>
             )}
-            <Link href="/dashboard/reportes" className="pi-quick-action">
-              <div className="pi-quick-action-icon">📈</div>
-              <div className="pi-quick-action-content">
-                <h4>Generar Reportes</h4>
-                <p>Estadísticas y análisis</p>
-              </div>
-            </Link>
+            {canAccess('documentos') && (
+              <Link href="/dashboard/documentos" className="pi-quick-action">
+                <div className="pi-quick-action-icon">📄</div>
+                <div className="pi-quick-action-content">
+                  <h4>Documentos</h4>
+                  <p>Gestionar archivos</p>
+                </div>
+              </Link>
+            )}
+            {canAccess('reportes') && (
+              <Link href="/dashboard/reportes" className="pi-quick-action">
+                <div className="pi-quick-action-icon">📈</div>
+                <div className="pi-quick-action-content">
+                  <h4>Generar Reportes</h4>
+                  <p>Estadísticas y análisis</p>
+                </div>
+              </Link>
+            )}
           </div>
         </div>
       </main>

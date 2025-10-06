@@ -56,15 +56,39 @@ export function usePermissions() {
   };
 
   const canAccessUsers = (): boolean => {
-    return hasPermission('usuarios', 'leer') || hasPermission('usuarios', 'acceder');
+    // Un usuario puede acceder a usuarios si tiene cualquier permiso sobre usuarios
+    // o si es administrador
+    return hasPermission('usuarios', 'leer') || 
+           hasPermission('usuarios', 'crear') || 
+           hasPermission('usuarios', 'actualizar') ||
+           hasPermission('usuarios', 'acceder') ||
+           userRole === 'administrador';
   };
 
   const canAccessRoles = (): boolean => {
-    return hasPermission('usuarios', 'crear') || hasPermission('usuarios', 'actualizar') || userRole === 'administrador';
+    // Solo administradores pueden acceder a roles (ya que manejan permisos del sistema)
+    return userRole === 'administrador';
   };
 
   const canAccessProjects = (): boolean => {
-    return hasPermission('proyectos', 'leer') || hasPermission('proyectos', 'acceder');
+    return hasPermission('proyectos', 'leer') || 
+           hasPermission('proyectos', 'crear') ||
+           hasPermission('proyectos', 'actualizar') ||
+           hasPermission('proyectos', 'acceder');
+  };
+
+  const canAccessDocuments = (): boolean => {
+    return hasPermission('documentos', 'leer') || 
+           hasPermission('documentos', 'crear') ||
+           hasPermission('documentos', 'actualizar') ||
+           hasPermission('documentos', 'acceder');
+  };
+
+  const canAccessReports = (): boolean => {
+    return hasPermission('reportes', 'leer') || 
+           hasPermission('reportes', 'crear') ||
+           hasPermission('reportes', 'exportar') ||
+           hasPermission('reportes', 'acceder');
   };
 
   return {
@@ -75,6 +99,8 @@ export function usePermissions() {
     canAccessUsers,
     canAccessRoles,
     canAccessProjects,
+    canAccessDocuments,
+    canAccessReports,
     refetch: fetchUserPermissions
   };
 }
