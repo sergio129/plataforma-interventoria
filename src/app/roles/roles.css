@@ -1,3 +1,51 @@
+.toast {
+  position: fixed;
+  top: 32px;
+  right: 32px;
+  min-width: 220px;
+  max-width: 340px;
+  z-index: 9999;
+  background: #fff;
+  color: #1e293b;
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(37,99,235,0.13);
+  padding: 16px 22px;
+  font-size: 16px;
+  font-weight: 500;
+  border-left: 6px solid #16a34a;
+  animation: fadeInToast 0.3s;
+}
+.toast.error {
+  border-left: 6px solid #ef4444;
+}
+.toast.success {
+  border-left: 6px solid #16a34a;
+}
+@keyframes fadeInToast {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.label-obligatorio {
+  font-weight: 500;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.asterisco {
+  color: #ef4444;
+  font-size: 1.1em;
+  font-weight: bold;
+}
+.field-error {
+  color: #ef4444;
+  background: rgba(239,68,68,0.08);
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 14px;
+  margin-top: 2px;
+  margin-bottom: 2px;
+}
 :root{
   --bg:#f6f8fb;
   --card:#ffffff;

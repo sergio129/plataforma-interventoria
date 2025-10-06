@@ -1,6 +1,8 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import Menu from '../components/Menu';
+import ConfirmModal from './ConfirmModal';
+import Toast from './Toast';
 import './roles.css';
 
 interface Permiso { recurso: string; acciones: string[] }
@@ -13,6 +15,8 @@ function RoleForm({ initial, onSave, onCancel }: { initial?: Rol; onSave: (r: Ro
   const [permisos, setPermisos] = useState<Permiso[]>(initial?.permisos || []);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [nombreError, setNombreError] = useState<string | null>(null);
+  const [descError, setDescError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!initial) {
@@ -41,17 +45,18 @@ function RoleForm({ initial, onSave, onCancel }: { initial?: Rol; onSave: (r: Ro
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    const errores: string[] = [];
+    setNombreError(null);
+    setDescError(null);
+    let hasError = false;
     if (!nombre || nombre.trim().length < 2) {
-      errores.push('El campo "Nombre" es obligatorio y debe tener al menos 2 caracteres');
+      setNombreError('Este campo es obligatorio y debe tener al menos 2 caracteres');
+      hasError = true;
     }
     if (!descripcion || descripcion.trim().length < 2) {
-      errores.push('El campo "Descripción" es obligatorio y debe tener al menos 2 caracteres');
+      setDescError('Este campo es obligatorio y debe tener al menos 2 caracteres');
+      hasError = true;
     }
-    if (errores.length > 0) {
-      setError(errores.join('. '));
-      return;
-    }
+    if (hasError) return;
     setSaving(true);
     try {
       await onSave({ _id: initial?._id, nombre: nombre.trim(), descripcion: descripcion.trim(), activo, permisos });
@@ -66,12 +71,14 @@ function RoleForm({ initial, onSave, onCancel }: { initial?: Rol; onSave: (r: Ro
     <form onSubmit={submit} style={{ display: 'grid', gap: 12 }}>
       {error && <div className="message error">{error}</div>}
       <div className="form-row">
-        <label>Nombre</label>
-        <input value={nombre} onChange={e => setNombre(e.target.value)} required />
+        <label className="label-obligatorio">Nombre <span className="asterisco">*</span></label>
+        <input value={nombre} onChange={e => setNombre(e.target.value)} required aria-required="true" />
+        {nombreError && <div className="field-error">{nombreError}</div>}
       </div>
       <div className="form-row">
-        <label>Descripción</label>
-        <textarea value={descripcion} onChange={e => setDescripcion(e.target.value)} rows={3} />
+        <label className="label-obligatorio">Descripción <span className="asterisco">*</span></label>
+        <textarea value={descripcion} onChange={e => setDescripcion(e.target.value)} rows={3} required aria-required="true" />
+        {descError && <div className="field-error">{descError}</div>}
       </div>
       <div className="form-row">
         <label>Estado</label>
@@ -106,7 +113,7 @@ export default function RolesPublicPage() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Rol | null>(null);
   const [showForm, setShowForm] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => { load(); }, []);
@@ -145,7 +152,7 @@ export default function RolesPublicPage() {
   }
 
   async function saveRole(r: Rol) {
-    setMessage(null); setError(null);
+  setError(null);
     const headers = getAuthHeaders();
     const opts = { headers, body: JSON.stringify(r) } as any;
     try {
@@ -157,9 +164,10 @@ export default function RolesPublicPage() {
       }
       const j = await res.json();
       if (!res.ok || !j.success) {
+        setToast({ message: j.message || 'Error guardando rol', type: 'error' });
         throw new Error(j.message || 'Error guardando rol');
       }
-      setMessage('Rol guardado correctamente');
+      setToast({ message: r._id ? 'Rol editado correctamente' : 'Rol creado correctamente', type: 'success' });
       setShowForm(false); setEditing(null);
       await load();
     } catch (err: any) {
@@ -168,21 +176,33 @@ export default function RolesPublicPage() {
     }
   }
 
-  async function del(id?: string) {
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [roleToDelete, setRoleToDelete] = useState<string | null>(null);
+
+  function askDelete(id?: string) {
     if (!id) return;
-    if (!confirm('Eliminar rol?')) return;
-    setMessage(null); setError(null);
+    setRoleToDelete(id);
+    setConfirmOpen(true);
+  }
+
+  async function delConfirmed() {
+    if (!roleToDelete) return;
+    setConfirmOpen(false);
+    setError(null);
     const headers = getAuthHeaders();
     try {
-      const res = await fetch(`/api/roles/${id}`, { method: 'DELETE', headers });
+      const res = await fetch(`/api/roles/${roleToDelete}`, { method: 'DELETE', headers });
       const j = await res.json();
       if (!res.ok || !j.success) {
+        setToast({ message: j.message || 'Error eliminando rol', type: 'error' });
         throw new Error(j.message || 'Error eliminando');
       }
-      setMessage('Rol eliminado');
+      setToast({ message: 'Rol eliminado', type: 'success' });
       await load();
     } catch (err: any) {
       setError(err?.message || 'Error eliminando');
+    } finally {
+      setRoleToDelete(null);
     }
   }
 
@@ -207,7 +227,7 @@ export default function RolesPublicPage() {
             </div>
           </div>
 
-          {message && <div className="message success">{message}</div>}
+          {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
           {error && <div className="message error">{error}</div>}
 
           {loading ? <div style={{ padding: 24 }}>Cargando roles...</div> : (
@@ -228,7 +248,13 @@ export default function RolesPublicPage() {
                     <td>{r.activo ? 'Sí' : 'No'}</td>
                     <td>
                       <button className="btn ghost" onClick={() => { setEditing(r); setShowForm(true); }}>Editar</button>
-                      <button className="btn danger" onClick={() => del(r._id)}>Eliminar</button>
+                      <button className="btn danger" onClick={() => askDelete(r._id)}>Eliminar</button>
+          <ConfirmModal
+            open={confirmOpen}
+            message="¿Está seguro que desea eliminar este rol?"
+            onConfirm={delConfirmed}
+            onCancel={() => { setConfirmOpen(false); setRoleToDelete(null); }}
+          />
                     </td>
                   </tr>
                 ))}
@@ -239,8 +265,8 @@ export default function RolesPublicPage() {
           {showForm && (
             <div className="modal-overlay">
                 <div className="modal-card">
-                  <div className="modal-header">
-                    <h3 style={{ margin: 0 }}>{editing ? 'Editar Rol' : 'Nuevo Rol'}</h3>
+                  <div className="modal-header" style={{ justifyContent: 'flex-start', gap: 12 }}>
+                    <h3 style={{ margin: 0, flex: 1, textAlign: 'left' }}>{editing ? 'Editar Rol' : 'Nuevo Rol'}</h3>
                     <button className="close-btn" onClick={() => { setShowForm(false); setEditing(null); }}>&times;</button>
                   </div>
                   <div className="modal-body">
