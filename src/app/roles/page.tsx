@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import Menu from '../components/Menu';
+import UserProfile from '../components/UserProfile';
 import ConfirmModal from './ConfirmModal';
 import Toast from './Toast';
 import './roles.css';
@@ -312,11 +313,11 @@ export default function RolesPublicPage() {
     }
   }
 
-  const items = [
-    { href: '/dashboard', label: 'Inicio' },
-    { href: '/roles', label: 'Roles' },
-    { href: '/dashboard/usuarios', label: 'Usuarios' }
-  ];
+    const items = [
+      { href: '/dashboard', label: 'Inicio' },
+      { href: '/roles', label: 'Roles' },
+      { href: '/usuarios', label: 'Usuarios' }
+    ];
 
   return (
     <div className="roles-page">
@@ -328,8 +329,14 @@ export default function RolesPublicPage() {
         <div className="roles-card">
           <div className="roles-header">
             <h1>Gestión de Roles</h1>
-            <div className="roles-actions">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <button className="btn primary" onClick={() => { setShowForm(true); setEditing(null); }}>Nuevo Rol</button>
+              <div style={{ marginLeft: 8 }}>
+                {/* user profile / logout */}
+                {/* lazy-load: simple component */}
+                <React.Suspense fallback={<div />}>{/* @ts-ignore */}
+                  <UserProfile /></React.Suspense>
+              </div>
             </div>
           </div>
 

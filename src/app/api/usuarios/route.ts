@@ -1,61 +1,35 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { connectToDatabase } from '../../../lib/database';
 import { Usuario } from '../../../lib/models/Usuario';
+import bcrypt from 'bcryptjs';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     await connectToDatabase();
-    
-    const usuarios = await Usuario.find({}, '-password').sort({ fechaCreacion: -1 });
-
-    return NextResponse.json({
-      success: true,
-      data: usuarios,
-      total: usuarios.length
-    });
-
-  } catch (error) {
-    console.error('Error obteniendo usuarios:', error);
-    return NextResponse.json({
-      success: false,
-      message: 'Error interno del servidor'
-    }, { status: 500 });
+    const usuarios = await Usuario.find({}, '-password').populate('roles').sort({ fechaCreacion: -1 }).lean();
+    return NextResponse.json({ success: true, data: usuarios, total: usuarios.length });
+  } catch (error: any) {
+    console.error('Error GET /api/usuarios', error);
+    return NextResponse.json({ success: false, message: error?.message || 'Error interno' }, { status: 500 });
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
     await connectToDatabase();
-    
     const data = await request.json();
-    
-    // Verificar si el email ya existe
-    const usuarioExistente = await Usuario.findOne({ email: data.email });
-    if (usuarioExistente) {
-      return NextResponse.json({
-        success: false,
-        message: 'El email ya está registrado'
-      }, { status: 400 });
-    }
+    if (data.password) data.password = await bcrypt.hash(data.password, 10);
 
-    // Crear nuevo usuario
-    const nuevoUsuario = new Usuario(data);
-    await nuevoUsuario.save();
+    // avoid duplicate email
+    const exists = await Usuario.findOne({ email: data.email });
+    if (exists) return NextResponse.json({ success: false, message: 'El email ya está registrado' }, { status: 400 });
 
-    // Retornar sin la contraseña
-    const usuarioSinPassword = await Usuario.findById(nuevoUsuario._id, '-password');
-
-    return NextResponse.json({
-      success: true,
-      message: 'Usuario creado exitosamente',
-      data: usuarioSinPassword
-    }, { status: 201 });
-
-  } catch (error) {
-    console.error('Error creando usuario:', error);
-    return NextResponse.json({
-      success: false,
-      message: 'Error interno del servidor'
-    }, { status: 500 });
+    const nuevo = new Usuario(data);
+    await nuevo.save();
+    const doc = await Usuario.findById(nuevo._id, '-password').populate('roles').lean();
+    return NextResponse.json({ success: true, data: doc }, { status: 201 });
+  } catch (error: any) {
+    console.error('Error POST /api/usuarios', error);
+    return NextResponse.json({ success: false, message: error?.message || 'Error creando usuario' }, { status: 500 });
   }
 }
