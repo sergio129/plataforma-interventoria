@@ -5,6 +5,7 @@ import ConfirmModal from '../../roles/ConfirmModal';
 import '../../roles/roles.css';
 import UserProfile from '../../components/UserProfile';
 import Menu from '../../components/Menu';
+import { usePermissions } from '../../hooks/usePermissions';
 
 interface Rol { _id?: string; nombre: string }
 interface Usuario { _id?: string; nombre: string; apellido: string; email: string; cedula: string; tipoUsuario?: string; estado?: string; roles?: Rol[] }
@@ -32,8 +33,43 @@ export default function UsuariosPage() {
   const [showForm, setShowForm] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [toDelete, setToDelete] = useState<string|null>(null);
+  
+  const { loading: permissionsLoading, canAccessUsers } = usePermissions();
 
-  useEffect(() => { load(); loadRoles(); }, []);
+  useEffect(() => { 
+    if (!permissionsLoading) {
+      if (canAccessUsers()) {
+        load(); 
+        loadRoles();
+      } else {
+        setLoading(false);
+        setError('No tienes permisos para acceder a la gestión de usuarios');
+      }
+    }
+  }, [permissionsLoading, canAccessUsers]);
+
+  // Si no tiene permisos, mostrar mensaje de error
+  if (!permissionsLoading && !canAccessUsers()) {
+    return (
+      <div className="roles-page" style={{ padding: 28 }}>
+        <aside style={{ position: 'sticky', top: 24 }}>
+          <Menu items={[{ href: '/dashboard', label: 'Inicio' }]} />
+        </aside>
+        <main className="roles-main">
+          <div style={{ padding: 0 }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:24 }}>
+              <h2>Usuarios</h2>
+              <div><UserProfile /></div>
+            </div>
+            <div className="message error">
+              No tienes permisos para acceder a la gestión de usuarios. 
+              Por favor contacta al administrador del sistema.
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   async function load() {
     setLoading(true); setError(null);
