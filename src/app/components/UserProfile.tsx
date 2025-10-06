@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 export default function UserProfile() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [user, setUser] = useState<{ nombre?: string; apellido?: string; email?: string } | null>(null);
+  const [user, setUser] = useState<{ nombre?: string; apellido?: string; email?: string; roles?: string[] } | null>(null);
   const ref = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -22,7 +22,8 @@ export default function UserProfile() {
         if (id) {
           fetch(`/api/usuarios/${id}`, { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.json()).then(j => {
             if (j?.success && j.data) {
-              setUser({ nombre: j.data.nombre, apellido: j.data.apellido, email: j.data.email });
+              const roleNames: string[] = (j.data.roles || []).map((r: any) => r?.nombre).filter(Boolean);
+              setUser({ nombre: j.data.nombre, apellido: j.data.apellido, email: j.data.email, roles: roleNames });
             }
           }).catch(() => {});
         }
@@ -72,8 +73,8 @@ export default function UserProfile() {
           <div style={{ padding: 12 }}>
             <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 12, color: '#6b7280' }}>Rol del Sistema</div>
-                <div style={{ fontWeight: 700 }}>—</div>
+                  <div style={{ fontSize: 12, color: '#6b7280' }}>Rol del Sistema</div>
+                  <div style={{ fontWeight: 700 }}>{(user?.roles && user.roles.length) ? user.roles.join(', ') : '—'}</div>
               </div>
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
