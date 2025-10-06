@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectToDatabase } from '../../../../lib/database';
-import { Usuario } from '../../../../lib/models/Usuario';
+import { connectToDatabase } from '../../../lib/database';
+import { Usuario } from '../../../lib/models/Usuario';
 
 export async function GET(request: NextRequest) {
   try {

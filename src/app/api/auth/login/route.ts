@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { connectToDatabase } from '../../../lib/database';
-import { Usuario } from '../../../lib/models/Usuario';
+import { connectToDatabase } from '../../../../lib/database';
+import { Usuario } from '../../../../lib/models/Usuario';
 
 export async function POST(request: NextRequest) {
   try {
