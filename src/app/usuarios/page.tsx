@@ -46,7 +46,7 @@ export default function UsuariosPage() {
         setError('No tienes permisos para acceder a la gestión de usuarios');
       }
     }
-  }, [permissionsLoading, canAccess]);
+  }, [permissionsLoading]);
 
   // Si no tiene permisos, mostrar mensaje de error
   if (!permissionsLoading && !canAccess('usuarios')) {

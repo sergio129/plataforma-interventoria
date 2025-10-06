@@ -52,7 +52,7 @@ export default function ProyectosPage() {
         setLoading(false);
       }
     }
-  }, [permissionsLoading, canAccess]);
+  }, [permissionsLoading]);
 
   // Filtrar menú basado en permisos reales
   // Menú se genera dinámicamente desde DynamicMenu
