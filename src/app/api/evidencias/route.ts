@@ -76,29 +76,48 @@ export async function GET(request: NextRequest) {
       ];
     }
 
-    const evidencias = await Evidencia.find(filtro)
+    // Obtener evidencias sin populate primero
+    const evidenciasBase = await Evidencia.find(filtro)
       .populate('creadoPor', 'nombre apellido')
-      .populate({
-        path: 'archivos',
-        select: '_id nombreOriginal tamaño tipoMime',
-        options: { 
-          transform: function(doc, ret) {
-            if (ret && ret.tamaño) {
-              const bytes = ret.tamaño;
+      .sort({ fecha: -1 });
+
+    console.log('Evidencias base (sin populate archivos):', evidenciasBase[0]?.archivos);
+
+    // Populate manual de archivos
+    const evidencias = await Promise.all(
+      evidenciasBase.map(async (evidencia) => {
+        if (evidencia.archivos && evidencia.archivos.length > 0) {
+          const archivosPopulados = await File.find({
+            _id: { $in: evidencia.archivos }
+          }).select('_id nombreOriginal tamaño tipoMime');
+
+          console.log('Archivos populados para evidencia:', evidencia._id, archivosPopulados);
+
+          // Agregar tamañoFormateado
+          const archivosConFormato = archivosPopulados.map(archivo => {
+            const archivoObj = archivo.toObject();
+            if (archivoObj.tamaño) {
+              const bytes = archivoObj.tamaño;
               if (bytes === 0) {
-                ret.tamañoFormateado = '0 Bytes';
+                archivoObj.tamañoFormateado = '0 Bytes';
               } else {
                 const k = 1024;
                 const sizes = ['Bytes', 'KB', 'MB', 'GB'];
                 const i = Math.floor(Math.log(bytes) / Math.log(k));
-                ret.tamañoFormateado = parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+                archivoObj.tamañoFormateado = parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
               }
             }
-            return ret;
-          }
+            return archivoObj;
+          });
+
+          return {
+            ...evidencia.toObject(),
+            archivos: archivosConFormato
+          };
         }
+        return evidencia.toObject();
       })
-      .sort({ fecha: -1 });
+    );
     
     return NextResponse.json(evidencias);
 
@@ -220,24 +239,26 @@ export async function POST(request: NextRequest) {
     await evidenciaGuardada.populate('creadoPor', 'nombre apellido');
     await evidenciaGuardada.populate({
       path: 'archivos',
-      select: '_id nombreOriginal tamaño tipoMime',
-      options: { 
-        transform: function(doc, ret) {
-          if (ret && ret.tamaño) {
-            const bytes = ret.tamaño;
-            if (bytes === 0) {
-              ret.tamañoFormateado = '0 Bytes';
-            } else {
-              const k = 1024;
-              const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-              const i = Math.floor(Math.log(bytes) / Math.log(k));
-              ret.tamañoFormateado = parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-            }
-          }
-          return ret;
-        }
-      }
+      model: 'File',
+      select: '_id nombreOriginal tamaño tipoMime'
     });
+
+    // Agregar tamañoFormateado manualmente después del populate
+    if (evidenciaGuardada.archivos && Array.isArray(evidenciaGuardada.archivos)) {
+      evidenciaGuardada.archivos.forEach((archivo: any) => {
+        if (archivo && archivo.tamaño) {
+          const bytes = archivo.tamaño;
+          if (bytes === 0) {
+            archivo.tamañoFormateado = '0 Bytes';
+          } else {
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            archivo.tamañoFormateado = parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+          }
+        }
+      });
+    }
 
     return NextResponse.json({
       success: true,

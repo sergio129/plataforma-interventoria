@@ -35,7 +35,11 @@ export async function GET(
     await connectToDatabase();
 
     const fileId = params.id;
+    console.log('Buscando archivo con ID:', fileId);
+    
     const file = await File.findById(fileId);
+    console.log('Archivo encontrado:', file ? 'Sí' : 'No');
+    console.log('Datos del archivo:', file?.toObject());
 
     if (!file) {
       return NextResponse.json(
@@ -52,7 +56,7 @@ export async function GET(
     }
 
     // Verificar si el archivo es confidencial y el usuario tiene acceso
-    if (file.esConfidencial && !file.usuariosAutorizados.includes(user.userId) && file.creadoPor.toString() !== user.userId) {
+    if (file.esConfidencial && !file.usuariosAutorizados.includes(user.userId) && file.creadoPor?.toString() !== user.userId) {
       return NextResponse.json(
         { error: 'No tienes permisos para acceder a este archivo' },
         { status: 403 }
