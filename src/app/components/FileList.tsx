@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import { toast } from 'react-hot-toast';
 
 interface FileItem {
   _id: string;
@@ -94,10 +95,36 @@ const FileList: React.FC<FileListProps> = ({
   };
 
   const handleDelete = async (file: FileItem) => {
-    if (!confirm(`¿Estás seguro de que quieres eliminar "${file.nombreOriginal}"?`)) {
-      return;
-    }
+    // Crear toast de confirmación personalizado
+    toast((t) => (
+      <div className="flex flex-col gap-2">
+        <div className="font-semibold">¿Eliminar archivo?</div>
+        <div className="text-sm text-gray-600">"{file.nombreOriginal}"</div>
+        <div className="flex gap-2 justify-end">
+          <button
+            onClick={() => {
+              toast.dismiss(t.id);
+              deleteFile(file);
+            }}
+            className="px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600"
+          >
+            Eliminar
+          </button>
+          <button
+            onClick={() => toast.dismiss(t.id)}
+            className="px-3 py-1 bg-gray-300 text-gray-700 rounded text-sm hover:bg-gray-400"
+          >
+            Cancelar
+          </button>
+        </div>
+      </div>
+    ), {
+      duration: 10000,
+      position: 'top-center',
+    });
+  };
 
+  const deleteFile = async (file: FileItem) => {
     try {
       const response = await fetch(`/api/archivo/files/${file._id}`, {
         method: 'DELETE',
@@ -112,9 +139,10 @@ const FileList: React.FC<FileListProps> = ({
       // Actualizar lista local
       setFiles(files.filter(f => f._id !== file._id));
       onFileDelete?.(file._id);
+      toast.success('Archivo eliminado correctamente');
       
     } catch (err: any) {
-      alert(`Error: ${err.message}`);
+      toast.error(`Error: ${err.message}`);
     }
   };
 
@@ -292,14 +320,6 @@ const FileList: React.FC<FileListProps> = ({
                     title={file.esImagen || file.esPDF ? 'Ver archivo' : 'Descargar archivo'}
                   >
                     {file.esImagen || file.esPDF ? '👁️ Ver' : '⬇️ Descargar'}
-                  </button>
-                  
-                  <button 
-                    onClick={() => handleDownload(file)} 
-                    className="action-button download-button"
-                    title="Descargar archivo"
-                  >
-                    💾 Descargar
                   </button>
                   
                   {editable && (
