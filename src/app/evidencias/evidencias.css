@@ -1,0 +1,426 @@
+/* Estilos para el módulo de Evidencias */
+.evidencias-page { 
+  padding: 28px; 
+  display: flex; 
+  gap: 24px; 
+  font-family: inherit;
+}
+
+.evidencias-main { 
+  flex: 1; 
+}
+
+.evidencias-card { 
+  background: var(--card, #ffffff); 
+  padding: 22px; 
+  border-radius: 12px; 
+  box-shadow: var(--shadow, 0 10px 30px rgba(2,6,23,0.08)); 
+}
+
+.evidencias-header { 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center; 
+  gap: 12px; 
+  margin-bottom: 16px;
+}
+
+.evidencias-header h1 { 
+  margin: 0; 
+  font-size: 20px; 
+  color: #1e293b;
+  font-weight: 700;
+}
+
+.evidencias-table { 
+  width: 100%; 
+  border-collapse: collapse; 
+  margin-top: 16px; 
+  font-family: inherit; 
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.evidencias-table thead th { 
+  text-align: left; 
+  padding: 12px 16px; 
+  color: var(--muted, #6b7280); 
+  font-size: 13px; 
+  border-bottom: 1px solid #eef2f7; 
+  background: #f8fafc;
+  font-weight: 600;
+}
+
+.evidencias-table tbody tr { 
+  background: transparent; 
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.evidencias-table tbody tr:hover { 
+  background: rgba(37,99,235,0.03); 
+}
+
+.evidencias-table td { 
+  padding: 14px 16px; 
+  vertical-align: middle; 
+  color: #334155;
+}
+
+/* Formulario de nueva evidencia */
+.evidencia-form {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 6px;
+  font-size: 14px;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #1f2937;
+  background: #fff;
+  box-sizing: border-box;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-group textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+/* Botones */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.2s;
+  text-decoration: none;
+}
+
+.btn.primary {
+  background: linear-gradient(90deg, #4f46e5, #06b6d4);
+  color: white;
+  border: none;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.2);
+}
+
+.btn.primary:hover {
+  background: linear-gradient(90deg, #4338ca, #0891b2);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+  transform: translateY(-1px);
+}
+
+.btn.success {
+  background: #16a34a;
+  color: white;
+  border: none;
+}
+
+.btn.success:hover {
+  background: #15803d;
+}
+
+.btn.ghost {
+  background: transparent;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+}
+
+.btn.ghost:hover {
+  background: #f9fafb;
+  color: #374151;
+  border-color: #9ca3af;
+}
+
+/* Enlaces de archivos */
+.evidencias-table a {
+  color: #3b82f6;
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+.evidencias-table a:hover {
+  color: #1d4ed8;
+}
+
+/* Mensajes de error */
+.error-message {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+  padding: 12px;
+  border-radius: 8px;
+  margin-top: 12px;
+  font-size: 14px;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+/* Estado de carga */
+.loading-state {
+  text-align: center;
+  padding: 40px;
+  color: #6b7280;
+  font-size: 16px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .evidencias-page {
+    flex-direction: column;
+    padding: 16px;
+  }
+  
+  .evidencias-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+  
+  .evidencias-table {
+    font-size: 12px;
+  }
+  
+  .evidencias-table th,
+  .evidencias-table td {
+    padding: 8px 12px;
+  }
+}
+
+/* Modal para nueva evidencia */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(240,245,255,0.4);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 40px 20px;
+  z-index: 10000;
+  overflow-y: auto;
+}
+
+.modal-card {
+  width: min(600px, 96%);
+  background: rgba(255,255,255,0.96);
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow: 0 16px 64px rgba(37,99,235,0.18);
+  border: 1px solid #e0e7ef;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.modal-icon {
+  font-size: 1.7em;
+  color: #2563eb;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: #1e293b;
+  flex: 1;
+}
+
+.close-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.6rem;
+  color: #64748b;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.close-btn:hover {
+  color: #ef4444;
+}
+
+.form-group select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #1f2937;
+  background: #fff;
+  box-sizing: border-box;
+}
+
+/* Área de subida de archivos */
+.file-upload-area {
+  border: 2px dashed #d1d5db;
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+  background: #f9fafb;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.file-upload-area:hover {
+  border-color: #3b82f6;
+  background: #eff6ff;
+}
+
+.file-upload-label {
+  cursor: pointer;
+  display: block;
+}
+
+.file-upload-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.file-upload-icon {
+  font-size: 2rem;
+  color: #6b7280;
+}
+
+.file-upload-content span {
+  color: #374151;
+  font-weight: 500;
+}
+
+.file-upload-content small {
+  color: #6b7280;
+  font-size: 12px;
+}
+
+/* Lista de archivos seleccionados */
+.selected-files {
+  margin-top: 16px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.selected-files h4 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  color: #374151;
+}
+
+.selected-files ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.file-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.file-item:last-child {
+  border-bottom: none;
+}
+
+.file-name {
+  font-weight: 500;
+  color: #1f2937;
+  flex: 1;
+}
+
+.file-size {
+  color: #6b7280;
+  font-size: 12px;
+  margin-left: 8px;
+}
+
+.remove-file-btn {
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 8px;
+}
+
+.remove-file-btn:hover {
+  background: #dc2626;
+}
+
+/* Acciones del formulario */
+.form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.form-actions .btn {
+  flex: 1;
+  justify-content: center;
+}
+
+/* Asterisco requerido */
+.asterisco {
+  color: #ef4444;
+  font-size: 1.1em;
+  font-weight: bold;
+}
+
+/* Variables CSS para consistencia */
+:root {
+  --bg: #f6f8fb;
+  --card: #ffffff;
+  --muted: #6b7280;
+  --accent: #2563eb;
+  --success: #16a34a;
+  --danger: #ef4444;
+  --shadow: 0 10px 30px rgba(2,6,23,0.08);
+}

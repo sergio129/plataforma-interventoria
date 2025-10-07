@@ -101,10 +101,12 @@ class PlataformaInterventoriaServer {
     // Importar rutas
     const authRoutes = require('./routes/auth').default;
     const usuariosRoutes = require('./routes/usuarios').default;
+    const evidenciaRoutes = require('./routes/evidencias').default;
 
     // Registrar rutas
     this.app.use('/api/auth', authRoutes);
     this.app.use('/api/usuarios', usuariosRoutes);
+    this.app.use('/api/evidencias', evidenciaRoutes);
     
     // Próximamente:
     // this.app.use('/api/proyectos', proyectosRouter);

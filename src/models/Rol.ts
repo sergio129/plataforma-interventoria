@@ -6,7 +6,8 @@ export enum TipoRecurso {
   PROYECTOS = 'proyectos',
   DOCUMENTOS = 'documentos',
   REPORTES = 'reportes',
-  CONFIGURACION = 'configuracion'
+  CONFIGURACION = 'configuracion',
+  EVIDENCIAS = 'evidencias' // Nuevo recurso
 }
 
 // Enum para acciones/permisos
@@ -233,6 +234,10 @@ export class PermisosManager {
             {
               recurso: TipoRecurso.CONFIGURACION,
               acciones: Object.values(TipoPermiso)
+            },
+            {
+              recurso: TipoRecurso.EVIDENCIAS,
+              acciones: Object.values(TipoPermiso)
             }
           ]
         },
@@ -255,6 +260,10 @@ export class PermisosManager {
             {
               recurso: TipoRecurso.REPORTES,
               acciones: [TipoPermiso.LEER, TipoPermiso.CREAR, TipoPermiso.EXPORTAR]
+            },
+            {
+              recurso: TipoRecurso.EVIDENCIAS,
+              acciones: [TipoPermiso.LEER, TipoPermiso.CREAR, TipoPermiso.ACTUALIZAR, TipoPermiso.ELIMINAR]
             }
           ]
         },
@@ -278,6 +287,10 @@ export class PermisosManager {
             {
               recurso: TipoRecurso.REPORTES,
               acciones: [TipoPermiso.LEER, TipoPermiso.CREAR, TipoPermiso.ACTUALIZAR, TipoPermiso.EXPORTAR]
+            },
+            {
+              recurso: TipoRecurso.EVIDENCIAS,
+              acciones: [TipoPermiso.LEER, TipoPermiso.CREAR, TipoPermiso.ACTUALIZAR]
             }
           ]
         },
@@ -300,6 +313,10 @@ export class PermisosManager {
             },
             {
               recurso: TipoRecurso.REPORTES,
+              acciones: [TipoPermiso.LEER, TipoPermiso.CREAR]
+            },
+            {
+              recurso: TipoRecurso.EVIDENCIAS,
               acciones: [TipoPermiso.LEER, TipoPermiso.CREAR]
             }
           ]
@@ -324,6 +341,10 @@ export class PermisosManager {
             {
               recurso: TipoRecurso.REPORTES,
               acciones: [TipoPermiso.LEER, TipoPermiso.CREAR]
+            },
+            {
+              recurso: TipoRecurso.EVIDENCIAS,
+              acciones: [TipoPermiso.LEER]
             }
           ]
         }

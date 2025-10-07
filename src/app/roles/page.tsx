@@ -196,7 +196,8 @@ export default function RolesPublicPage() {
     { key: 'proyectos', label: 'proyectos' },
     { key: 'documentos', label: 'documentos' },
     { key: 'reportes', label: 'reportes' },
-    { key: 'configuracion', label: 'configuracion' }
+    { key: 'configuracion', label: 'configuracion' },
+    { key: 'evidencias', label: 'evidencias' } // <--- Agregado
   ];
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -226,13 +227,13 @@ export default function RolesPublicPage() {
       try {
         const r = await fetch('/api/permisos/resources');
         const j = await r.json();
-        if (j.success) {
-          setRecursos(j.data.recursos || []);
-          setActiveTab((j.data.recursos && j.data.recursos[0] && j.data.recursos[0].key) || null);
-        } else {
-          setRecursos(FALLBACK_RECURSOS);
-          setActiveTab(FALLBACK_RECURSOS[0].key);
+        let recursosList = j.success ? (j.data.recursos || []) : FALLBACK_RECURSOS;
+        // Asegurar que 'evidencias' esté presente y no duplicado
+        if (!recursosList.some(r => r.key === 'evidencias')) {
+          recursosList.push({ key: 'evidencias', label: 'evidencias' });
         }
+        setRecursos(recursosList);
+        setActiveTab((recursosList[0] && recursosList[0].key) || null);
       } catch (e) {
         setRecursos(FALLBACK_RECURSOS);
         setActiveTab(FALLBACK_RECURSOS[0].key);
