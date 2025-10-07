@@ -453,4 +453,4 @@ ReporteSchema.index({ proyecto: 1, tipoReporte: 1, fechaReporte: -1 });
 ReporteSchema.index({ proyecto: 1, estado: 1, fechaCreacion: -1 });
 ReporteSchema.index({ interventor: 1, estado: 1, fechaReporte: -1 });
 
-export const Reporte = mongoose.model<IReporte>('Reporte', ReporteSchema);
+export const Reporte = mongoose.models.Reporte || mongoose.model<IReporte>('Reporte', ReporteSchema);

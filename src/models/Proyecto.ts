@@ -386,4 +386,4 @@ ProyectoSchema.index({ 'ubicacion.ciudad': 1 });
 ProyectoSchema.index({ tags: 1 });
 ProyectoSchema.index({ fechaCreacion: -1 });
 
-export const Proyecto = mongoose.model<IProyecto>('Proyecto', ProyectoSchema);
+export const Proyecto = mongoose.models.Proyecto || mongoose.model<IProyecto>('Proyecto', ProyectoSchema);

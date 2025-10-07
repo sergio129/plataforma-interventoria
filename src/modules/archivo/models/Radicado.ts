@@ -165,8 +165,7 @@ const RadicadoSchema = new Schema<IRadicado>({
   }
 });
 
-// Índices para optimizar consultas
-RadicadoSchema.index({ consecutivo: 1 });
+// Índices para optimizar consultas (consecutivo ya tiene unique: true)
 RadicadoSchema.index({ creadoPor: 1, activo: 1 });
 RadicadoSchema.index({ estado: 1, activo: 1 });
 RadicadoSchema.index({ prioridad: 1, activo: 1 });

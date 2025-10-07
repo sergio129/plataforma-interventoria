@@ -308,4 +308,4 @@ DocumentoSchema.index({ fechaVencimiento: 1 });
 DocumentoSchema.index({ proyecto: 1, tipoDocumento: 1, estado: 1 });
 DocumentoSchema.index({ proyecto: 1, fechaCreacion: -1 });
 
-export const Documento = mongoose.model<IDocumento>('Documento', DocumentoSchema);
+export const Documento = mongoose.models.Documento || mongoose.model<IDocumento>('Documento', DocumentoSchema);

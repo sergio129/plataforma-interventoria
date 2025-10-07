@@ -110,7 +110,7 @@ RolSchema.methods.getPermisosRecurso = function(recurso: TipoRecurso): IPermiso 
 };
 
 // Crear el modelo
-export const Rol = mongoose.model<IRol>('Rol', RolSchema);
+export const Rol = mongoose.models.Rol || mongoose.model<IRol>('Rol', RolSchema);
 
 // Clase utilitaria para manejo de permisos
 export class PermisosManager {

@@ -92,14 +92,21 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(bytes);
     const checksum = calculateChecksum(buffer);
 
-    // Verificar si ya existe un archivo con el mismo checksum
-    const existingFile = await File.findOne({ checksum, activo: true });
-    if (existingFile) {
-      return NextResponse.json(
-        { error: 'Este archivo ya existe en el sistema' },
-        { status: 409 }
-      );
+    // Verificar si ya existe un archivo con el mismo nombre en el mismo radicado
+    if (radicadoId) {
+      const existingFile = await File.findOne({ 
+        nombreOriginal: file.name,
+        radicadoId, 
+        activo: true 
+      });
+      if (existingFile) {
+        return NextResponse.json(
+          { error: `Ya existe un archivo llamado "${file.name}" en este radicado` },
+          { status: 409 }
+        );
+      }
     }
+    // Si no hay radicadoId, permitir cualquier archivo (no verificar duplicados globales)
 
     // Generar nombre único para el archivo
     const fileName = generateFileName(file.name);
