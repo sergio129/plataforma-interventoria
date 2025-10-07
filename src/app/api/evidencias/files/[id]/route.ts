@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '../../../../../config/database';
 import File from '../../../../../modules/archivo/models/File';
-import { GridFSStorage } from '../../../../../lib/storage/gridfsStorage';
+import { GridFSStorage, initGridFS } from '../../../../../lib/storage/gridfsStorage';
 import jwt from 'jsonwebtoken';
 
 export const dynamic = 'force-dynamic';
@@ -36,6 +36,15 @@ export async function GET(
 
     const fileId = params.id;
     console.log('Buscando archivo con ID:', fileId);
+
+    // Verificar que GridFS esté inicializado
+    try {
+      const { initGridFS } = await import('../../../../../lib/storage/gridfsStorage');
+      initGridFS();
+      console.log('GridFS inicializado correctamente');
+    } catch (initError) {
+      console.error('Error inicializando GridFS:', initError);
+    }
     
     const file = await File.findById(fileId);
     console.log('Archivo encontrado:', file ? 'Sí' : 'No');
@@ -64,12 +73,23 @@ export async function GET(
     }
 
     try {
-      // Obtener el archivo de GridFS
-      const { buffer, metadata } = await GridFSStorage.downloadFile(file.gridfsId);
+      console.log('Intentando descargar archivo de GridFS con ID:', file.gridfsId);
+      
+      // Obtener el archivo de GridFS (solo devuelve Buffer)
+      const buffer = await GridFSStorage.downloadFile(file.gridfsId);
+      console.log('Buffer recibido desde GridFS, tamaño:', buffer?.length || 'undefined');
+      
+      if (!buffer) {
+        console.error('GridFS no devolvió buffer válido');
+        return NextResponse.json(
+          { error: 'Archivo no encontrado en almacenamiento' },
+          { status: 404 }
+        );
+      }
 
       // Configurar headers para la descarga
       const headers = new Headers();
-      headers.set('Content-Type', file.tipoMime);
+      headers.set('Content-Type', file.tipoMime || 'application/octet-stream');
       headers.set('Content-Length', buffer.length.toString());
       headers.set('Content-Disposition', `attachment; filename="${file.nombreOriginal}"`);
       headers.set('Cache-Control', 'private, max-age=3600');
@@ -81,6 +101,7 @@ export async function GET(
 
     } catch (gridfsError) {
       console.error('Error descargando archivo de GridFS:', gridfsError);
+      console.error('Stack trace:', gridfsError.stack);
       return NextResponse.json(
         { error: 'Error accediendo al archivo' },
         { status: 500 }
