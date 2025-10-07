@@ -590,14 +590,12 @@ function ArchivoContent() {
                     <label htmlFor="tipoOficio">📋 Tipo de Oficio *</label>
                     <select id="tipoOficio" name="tipoOficio" required className="form-select">
                       <option value="">Seleccionar tipo</option>
-                      <option value="oficio">Oficio</option>
-                      <option value="memorando">Memorando</option>
-                      <option value="circular">Circular</option>
-                      <option value="resolucion">Resolución</option>
-                      <option value="carta">Carta</option>
-                      <option value="informe">Informe</option>
-                      <option value="solicitud">Solicitud</option>
-                      <option value="respuesta">Respuesta</option>
+                      <option value="Oficio">Oficio</option>
+                      <option value="Memorando">Memorando</option>
+                      <option value="Circular">Circular</option>
+                      <option value="Comunicación">Comunicación</option>
+                      <option value="Resolución">Resolución</option>
+                      <option value="Otro">Otro</option>
                     </select>
                   </div>
 
