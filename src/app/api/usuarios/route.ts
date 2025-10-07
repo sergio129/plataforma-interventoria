@@ -20,9 +20,13 @@ export async function POST(request: Request) {
     const data = await request.json();
     if (data.password) data.password = await bcrypt.hash(data.password, 10);
 
-    // avoid duplicate email
-    const exists = await Usuario.findOne({ email: data.email });
-    if (exists) return NextResponse.json({ success: false, message: 'El email ya está registrado' }, { status: 400 });
+    // Validar email duplicado
+    const existsEmail = await Usuario.findOne({ email: data.email });
+    if (existsEmail) return NextResponse.json({ success: false, message: 'El email ya está registrado' }, { status: 400 });
+
+    // Validar cédula duplicada
+    const existsCedula = await Usuario.findOne({ cedula: data.cedula });
+    if (existsCedula) return NextResponse.json({ success: false, message: 'La cédula ya está registrada' }, { status: 400 });
 
     const nuevo = new Usuario(data);
     await nuevo.save();
@@ -30,6 +34,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, data: doc }, { status: 201 });
   } catch (error: any) {
     console.error('Error POST /api/usuarios', error);
+    // Capturar error de MongoDB por duplicado
+    if (error.code === 11000 && error.keyPattern?.cedula) {
+      return NextResponse.json({ success: false, message: 'La cédula ya está registrada' }, { status: 400 });
+    }
+    if (error.code === 11000 && error.keyPattern?.email) {
+      return NextResponse.json({ success: false, message: 'El email ya está registrado' }, { status: 400 });
+    }
     return NextResponse.json({ success: false, message: error?.message || 'Error creando usuario' }, { status: 500 });
   }
 }
