@@ -129,19 +129,47 @@ export async function GET(request: NextRequest) {
     // Obtener parámetros de consulta
     const { searchParams } = new URL(request.url);
     const categoria = searchParams.get('categoria');
-    const fecha = searchParams.get('fecha');
+    const fechaDesde = searchParams.get('fechaDesde');
+    const fechaHasta = searchParams.get('fechaHasta');
+    const usuario = searchParams.get('usuario');
     const q = searchParams.get('q');
 
     // Construir filtro
     const filtro: any = { eliminado: false };
-    if (categoria) filtro.categoria = categoria;
-    if (fecha) filtro.fecha = { $gte: new Date(fecha) };
-    if (q) {
+    
+    // Filtro por categoría
+    if (categoria && categoria !== 'todas') {
+      filtro.categoria = categoria;
+    }
+    
+    // Filtro por rango de fechas
+    if (fechaDesde || fechaHasta) {
+      filtro.fecha = {};
+      if (fechaDesde) {
+        filtro.fecha.$gte = new Date(fechaDesde);
+      }
+      if (fechaHasta) {
+        // Agregar 23:59:59 para incluir todo el día
+        const fechaFin = new Date(fechaHasta);
+        fechaFin.setHours(23, 59, 59, 999);
+        filtro.fecha.$lte = fechaFin;
+      }
+    }
+    
+    // Filtro por usuario creador
+    if (usuario && usuario !== 'todos') {
+      filtro.creadoPor = usuario;
+    }
+    
+    // Filtro por texto (título o descripción)
+    if (q && q.trim() !== '') {
       filtro.$or = [
-        { titulo: { $regex: q, $options: 'i' } },
-        { descripcion: { $regex: q, $options: 'i' } }
+        { titulo: { $regex: q.trim(), $options: 'i' } },
+        { descripcion: { $regex: q.trim(), $options: 'i' } }
       ];
     }
+
+    console.log('🔍 Filtros aplicados:', filtro);
 
     // Obtener evidencias sin populate primero
     const evidenciasBase = await Evidencia.find(filtro)

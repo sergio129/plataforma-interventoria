@@ -56,6 +56,18 @@ export default function EvidenciasPage() {
   const [showEditForm, setShowEditForm] = useState(false);
   const [evidenciaToDelete, setEvidenciaToDelete] = useState<Evidencia | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  
+  // Estados para filtros
+  const [filtros, setFiltros] = useState({
+    busqueda: '',
+    categoria: 'todas',
+    usuario: 'todos',
+    fechaDesde: '',
+    fechaHasta: ''
+  });
+  const [categorias, setCategorias] = useState<string[]>([]);
+  const [usuarios, setUsuarios] = useState<any[]>([]);
+  const [showFiltros, setShowFiltros] = useState(false);
 
   useEffect(() => {
     if (permissionsLoading) return; // Esperar a que se carguen los permisos
@@ -67,23 +79,39 @@ export default function EvidenciasPage() {
     
     if (!dataLoaded) {
       loadEvidencias();
+      loadOpcionesFiltros();
     }
   }, [canRead, permissionsLoading, dataLoaded]);
 
+  // Efecto para aplicar filtros cuando cambien
+  useEffect(() => {
+    if (dataLoaded) {
+      loadEvidencias();
+    }
+  }, [filtros]);
+
   async function loadEvidencias() {
-    if (loading || dataLoaded) return; // Evitar múltiples cargas
-    
     setLoading(true);
     setError(null);
     
     try {
-      const res = await fetch('/api/evidencias');
+      // Construir URL con parámetros de filtro
+      const params = new URLSearchParams();
+      if (filtros.busqueda.trim()) params.append('q', filtros.busqueda.trim());
+      if (filtros.categoria !== 'todas') params.append('categoria', filtros.categoria);
+      if (filtros.usuario !== 'todos') params.append('usuario', filtros.usuario);
+      if (filtros.fechaDesde) params.append('fechaDesde', filtros.fechaDesde);
+      if (filtros.fechaHasta) params.append('fechaHasta', filtros.fechaHasta);
+
+      const url = `/api/evidencias${params.toString() ? '?' + params.toString() : ''}`;
+      console.log('🔍 Cargando evidencias con filtros:', url);
+      
+      const res = await fetch(url);
       if (!res.ok) throw new Error('Error en la respuesta');
       const data = await res.json();
-      console.log('Datos de evidencias cargados:', data); // Debug temporal
-      console.log('Primer evidencia archivos:', data[0]?.archivos); // Debug archivos
+      console.log('Datos de evidencias cargados:', data.length, 'evidencias');
       setEvidencias(Array.isArray(data) ? data : []);
-      setDataLoaded(true);
+      if (!dataLoaded) setDataLoaded(true);
     } catch (err) {
       setError('Error cargando evidencias');
       console.error('Error:', err);
@@ -92,8 +120,45 @@ export default function EvidenciasPage() {
     }
   }
 
+  async function loadOpcionesFiltros() {
+    try {
+      // Cargar categorías
+      const resCategorias = await fetch('/api/evidencias/categorias');
+      if (resCategorias.ok) {
+        const dataCategorias = await resCategorias.json();
+        setCategorias(Array.isArray(dataCategorias) ? dataCategorias : []);
+      }
+
+      // Cargar usuarios
+      const resUsuarios = await fetch('/api/evidencias/usuarios');
+      if (resUsuarios.ok) {
+        const dataUsuarios = await resUsuarios.json();
+        setUsuarios(Array.isArray(dataUsuarios) ? dataUsuarios : []);
+      }
+    } catch (error) {
+      console.error('Error cargando opciones de filtros:', error);
+    }
+  }
+
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
     setForm(f => ({ ...f, [e.target.name]: e.target.value }));
+  }
+
+  function handleFiltroChange(campo: string, valor: string) {
+    setFiltros(prev => ({
+      ...prev,
+      [campo]: valor
+    }));
+  }
+
+  function limpiarFiltros() {
+    setFiltros({
+      busqueda: '',
+      categoria: 'todas',
+      usuario: 'todos',
+      fechaDesde: '',
+      fechaHasta: ''
+    });
   }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -295,12 +360,96 @@ export default function EvidenciasPage() {
         <div className="evidencias-card">
           <div className="evidencias-header">
             <h1>Evidencias</h1>
-            {canCreate('evidencias') && (
-              <button className="btn primary" onClick={() => setShowForm(true)}>
-                Nueva Evidencia
+            <div className="header-actions">
+              <button 
+                className="btn secondary" 
+                onClick={() => setShowFiltros(!showFiltros)}
+                style={{ marginRight: '10px' }}
+              >
+                🔍 Filtros
               </button>
-            )}
+              {canCreate('evidencias') && (
+                <button className="btn primary" onClick={() => setShowForm(true)}>
+                  Nueva Evidencia
+                </button>
+              )}
+            </div>
           </div>
+
+          {/* Panel de Filtros */}
+          {showFiltros && (
+            <div className="filtros-panel">
+              <div className="filtros-grid">
+                <div className="filtro-item">
+                  <label>Buscar:</label>
+                  <input
+                    type="text"
+                    placeholder="Buscar por título o descripción..."
+                    value={filtros.busqueda}
+                    onChange={(e) => handleFiltroChange('busqueda', e.target.value)}
+                  />
+                </div>
+
+                <div className="filtro-item">
+                  <label>Categoría:</label>
+                  <select
+                    value={filtros.categoria}
+                    onChange={(e) => handleFiltroChange('categoria', e.target.value)}
+                  >
+                    <option value="todas">Todas las categorías</option>
+                    {categorias.map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="filtro-item">
+                  <label>Usuario:</label>
+                  <select
+                    value={filtros.usuario}
+                    onChange={(e) => handleFiltroChange('usuario', e.target.value)}
+                  >
+                    <option value="todos">Todos los usuarios</option>
+                    {usuarios.map(usuario => (
+                      <option key={usuario._id} value={usuario._id}>
+                        {usuario.nombreCompleto}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="filtro-item">
+                  <label>Fecha desde:</label>
+                  <input
+                    type="date"
+                    value={filtros.fechaDesde}
+                    onChange={(e) => handleFiltroChange('fechaDesde', e.target.value)}
+                  />
+                </div>
+
+                <div className="filtro-item">
+                  <label>Fecha hasta:</label>
+                  <input
+                    type="date"
+                    value={filtros.fechaHasta}
+                    onChange={(e) => handleFiltroChange('fechaHasta', e.target.value)}
+                  />
+                </div>
+
+                <div className="filtro-item filtro-acciones">
+                  <button className="btn secondary small" onClick={limpiarFiltros}>
+                    🗑️ Limpiar
+                  </button>
+                  <button 
+                    className="btn secondary small" 
+                    onClick={() => setShowFiltros(false)}
+                  >
+                    ✖️ Cerrar
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
           
           {showForm && (
             <div className="modal-overlay" onClick={() => setShowForm(false)}>
@@ -497,17 +646,43 @@ export default function EvidenciasPage() {
             </div>
           )}
           
+          {/* Resumen de resultados */}
+          {!loading && dataLoaded && (
+            <div className="resultados-resumen">
+              <span className="contador-resultados">
+                {evidencias.length === 0 
+                  ? 'No se encontraron evidencias'
+                  : `${evidencias.length} evidencia${evidencias.length !== 1 ? 's' : ''} encontrada${evidencias.length !== 1 ? 's' : ''}`
+                }
+              </span>
+              {(filtros.busqueda || filtros.categoria !== 'todas' || filtros.usuario !== 'todos' || filtros.fechaDesde || filtros.fechaHasta) && (
+                <span className="filtros-activos">
+                  (con filtros aplicados)
+                </span>
+              )}
+            </div>
+          )}
+
           {loading ? (
             <div className="loading-state">Cargando evidencias...</div>
           ) : evidencias.length === 0 ? (
             <div className="empty-state">
               <div style={{ textAlign: 'center', padding: '40px', color: '#6b7280' }}>
-                <div style={{ fontSize: '48px', marginBottom: '16px' }}>📂</div>
-                <h3 style={{ margin: '0 0 8px 0', color: '#374151' }}>No hay evidencias</h3>
+                <div style={{ fontSize: '48px', marginBottom: '16px' }}>
+                  {(filtros.busqueda || filtros.categoria !== 'todas' || filtros.usuario !== 'todos' || filtros.fechaDesde || filtros.fechaHasta) ? '�' : '�📂'}
+                </div>
+                <h3 style={{ margin: '0 0 8px 0', color: '#374151' }}>
+                  {(filtros.busqueda || filtros.categoria !== 'todas' || filtros.usuario !== 'todos' || filtros.fechaDesde || filtros.fechaHasta) 
+                    ? 'No se encontraron evidencias' 
+                    : 'No hay evidencias'
+                  }
+                </h3>
                 <p style={{ margin: 0 }}>
-                  {canCreate('evidencias') 
-                    ? 'Comienza creando tu primera evidencia.' 
-                    : 'No tienes permisos para ver evidencias.'
+                  {(filtros.busqueda || filtros.categoria !== 'todas' || filtros.usuario !== 'todos' || filtros.fechaDesde || filtros.fechaHasta) 
+                    ? 'Intenta ajustar los filtros de búsqueda.' 
+                    : canCreate('evidencias') 
+                      ? 'Comienza creando tu primera evidencia.' 
+                      : 'No tienes permisos para ver evidencias.'
                   }
                 </p>
               </div>
