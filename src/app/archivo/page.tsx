@@ -1,6 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
+import { useRouter } from 'next/navigation';
+import DynamicMenu from '../components/DynamicMenu';
+import UserProfile from '../components/UserProfile';
+import { useMenuGeneration } from '../hooks/useMenuGeneration';
 import { usePermissions } from '../hooks/usePermissions';
 import FileUpload from '../components/FileUpload';
 import FileList from '../components/FileList';
@@ -48,7 +52,37 @@ const PRIORIDAD_COLORS = {
   urgente: 'priority-urgent'
 };
 
-export default function ArchivoPage() {
+function isAuthenticated(): boolean {
+  if (typeof window === 'undefined') return false;
+  
+  const token = localStorage.getItem('auth_token') || localStorage.getItem('token');
+  if (!token) return false;
+  
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const now = Date.now() / 1000;
+    return payload.exp > now;
+  } catch (e) {
+    return false;
+  }
+}
+
+function getUserRole(): string {
+  try {
+    const token = typeof window !== 'undefined' ? 
+      (localStorage.getItem('auth_token') || localStorage.getItem('token')) : null;
+    
+    if (token) {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.tipoUsuario || 'usuario';
+    }
+  } catch (e) {
+    console.error('Error decoding token:', e);
+  }
+  return '';
+}
+
+function ArchivoContent() {
   const [radicados, setRadicados] = useState<Radicado[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -91,7 +125,7 @@ export default function ArchivoPage() {
 
       if (response.ok) {
         const data = await response.json();
-        setRadicados(data.data.radicados);
+        setRadicados(data.data || []);
       } else {
         setError('Error al cargar los radicados');
       }
@@ -977,6 +1011,101 @@ export default function ArchivoPage() {
           margin-top: 1rem;
         }
       `}</style>
+    </div>
+  );
+}
+
+export default function ArchivoPage() {
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(true);
+  const [authenticated, setAuthenticated] = useState(false);
+  const role = getUserRole();
+  const { loading, menuItems, canAccess } = useMenuGeneration();
+
+  useEffect(() => {
+    const checkAuth = () => {
+      const authStatus = isAuthenticated();
+      setAuthenticated(authStatus);
+      setIsLoading(false);
+
+      if (!authStatus) {
+        router.push('/auth/signin');
+      }
+    };
+
+    checkAuth();
+  }, [router]);
+
+  if (isLoading || loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando sistema de archivo...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!authenticated) {
+    return null;
+  }
+
+  if (!canAccess('archivo')) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="text-center p-8 bg-white rounded-lg shadow-lg">
+          <div className="text-6xl mb-4">🔒</div>
+          <h1 className="text-2xl font-bold text-gray-800 mb-2">Acceso Denegado</h1>
+          <p className="text-gray-600 mb-4">No tienes permisos para acceder al sistema de archivo</p>
+          <button
+            onClick={() => router.push('/dashboard')}
+            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Volver al Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="flex h-screen">
+        {/* Menú lateral */}
+        <div className="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg">
+          <DynamicMenu />
+        </div>
+
+        {/* Contenido principal */}
+        <div className="flex-1 flex flex-col ml-64">
+          {/* Header con perfil de usuario */}
+          <div className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
+            <div className="flex justify-between items-center">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">📁 Archivo de Interventoría</h1>
+                <p className="text-gray-600 text-sm">Gestión de radicados y documentos oficiales</p>
+              </div>
+              <UserProfile />
+            </div>
+          </div>
+
+          {/* Contenido del archivo */}
+          <div className="flex-1 overflow-auto">
+            <Suspense fallback={
+              <div className="p-6">
+                <div className="animate-pulse">
+                  <div className="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
+                  <div className="h-32 bg-gray-200 rounded mb-4"></div>
+                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                </div>
+              </div>
+            }>
+              <ArchivoContent />
+            </Suspense>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
