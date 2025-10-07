@@ -203,7 +203,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
           <div className="file-upload-text">
             <p><strong>Arrastra archivos aquí o haz clic para seleccionar</strong></p>
             <p>Tipos permitidos: {acceptedTypes.join(', ')}</p>
-            <p>Tamaño máximo: {maxSize}MB</p>
+            <p>Tamaño máximo: 2MB</p>
           </div>
         </div>
       </div>

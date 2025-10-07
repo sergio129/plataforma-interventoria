@@ -533,7 +533,7 @@ function ArchivoContent() {
                     onUploadSuccess={handleFileUploadSuccess}
                     onUploadError={(error) => {/* Toast ya manejado en FileUpload */}}
                     acceptedTypes={['.pdf', '.jpg', '.jpeg', '.png', '.gif', '.doc', '.docx']}
-                    maxSize={10}
+                    maxSize={2}
                     multiple={true}
                   />
                 </div>
