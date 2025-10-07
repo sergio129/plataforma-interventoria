@@ -1,5 +1,5 @@
+import Radicado from '../../../modules/archivo/models/Radicado';
 import { NextRequest, NextResponse } from 'next/server';
-import { Radicado, TipoOficio, EstadoOficio, PrioridadOficio } from '../../../modules/archivo/models/Archivo';
 import jwt from 'jsonwebtoken';
 import { connectToDatabase } from '../../../lib/database';
 
