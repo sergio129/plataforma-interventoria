@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
 
     const evidencias = await Evidencia.find(filtro)
       .populate('creadoPor', 'nombre apellido')
-      .populate('archivos')
+      .populate('archivos', 'nombreOriginal tamaño tipoMime tamañoFormateado')
       .sort({ fecha: -1 });
     
     return NextResponse.json(evidencias);
@@ -199,7 +199,7 @@ export async function POST(request: NextRequest) {
 
     const evidenciaGuardada = await nuevaEvidencia.save();
     await evidenciaGuardada.populate('creadoPor', 'nombre apellido');
-    await evidenciaGuardada.populate('archivos');
+    await evidenciaGuardada.populate('archivos', 'nombreOriginal tamaño tipoMime tamañoFormateado');
 
     return NextResponse.json({
       success: true,
@@ -223,9 +223,4 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { 
         error: 'Error interno del servidor',
-        details: process.env.NODE_ENV === 'development' ? error.message : undefined
-      },
-      { status: 500 }
-    );
-  }
-}
+        details: process.env.NODE_ENV === 'development' ? error.message : undef

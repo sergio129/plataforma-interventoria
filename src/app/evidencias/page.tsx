@@ -8,8 +8,8 @@ interface Archivo {
   _id: string;
   nombreOriginal: string;
   tamaño: number;
-  tipoMime: string;
-  tamañoFormateado: string;
+  tipoMime?: string;
+  tamañoFormateado?: string;
 }
 
 interface Evidencia {
@@ -24,6 +24,20 @@ interface Evidencia {
     nombre: string;
     apellido?: string;
   };
+}
+
+// Función para obtener el icono apropiado según el tipo de archivo
+function getFileIcon(tipoMime?: string): string {
+  if (!tipoMime) return '📄'; // Icono por defecto si no hay tipo MIME
+  
+  const mime = tipoMime.toLowerCase();
+  if (mime.includes('pdf')) return '📄';
+  if (mime.includes('image')) return '🖼️';
+  if (mime.includes('word') || mime.includes('document')) return '📝';
+  if (mime.includes('excel') || mime.includes('spreadsheet')) return '📊';
+  if (mime.includes('powerpoint') || mime.includes('presentation')) return '📋';
+  if (mime.includes('text')) return '📃';
+  return '📄';
 }
 
 export default function EvidenciasPage() {
@@ -303,6 +317,19 @@ export default function EvidenciasPage() {
           
           {loading ? (
             <div className="loading-state">Cargando evidencias...</div>
+          ) : evidencias.length === 0 ? (
+            <div className="empty-state">
+              <div style={{ textAlign: 'center', padding: '40px', color: '#6b7280' }}>
+                <div style={{ fontSize: '48px', marginBottom: '16px' }}>📂</div>
+                <h3 style={{ margin: '0 0 8px 0', color: '#374151' }}>No hay evidencias</h3>
+                <p style={{ margin: 0 }}>
+                  {canCreate('evidencias') 
+                    ? 'Comienza creando tu primera evidencia.' 
+                    : 'No tienes permisos para ver evidencias.'
+                  }
+                </p>
+              </div>
+            </div>
           ) : (
             <table className="evidencias-table">
               <thead>
@@ -311,6 +338,7 @@ export default function EvidenciasPage() {
                   <th>Descripción</th>
                   <th>Categoría</th>
                   <th>Fecha</th>
+                  <th>Creado por</th>
                   <th>Archivos</th>
                 </tr>
               </thead>
@@ -322,20 +350,45 @@ export default function EvidenciasPage() {
                     <td>{ev.categoria}</td>
                     <td>{ev.fecha?.slice(0,10)}</td>
                     <td>
+                      {ev.creadoPor ? (
+                        <span className="usuario-info">
+                          {ev.creadoPor.nombre} {ev.creadoPor.apellido}
+                        </span>
+                      ) : (
+                        <span style={{ color: '#9ca3af', fontStyle: 'italic' }}>
+                          Usuario desconocido
+                        </span>
+                      )}
+                    </td>
+                    <td>
                       {ev.archivos && ev.archivos.length > 0 ? (
                         <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>
                           {ev.archivos.map((archivo) => (
-                            <li key={archivo._id}>
-                              <span>{archivo.nombreOriginal}</span>
-                              {archivo.tamañoFormateado && (
-                                <small style={{ marginLeft: '8px', color: '#666' }}>
-                                  ({archivo.tamañoFormateado})
-                                </small>
+                            <li key={archivo._id} style={{ marginBottom: '6px' }}>
+                              <a 
+                                href={`/api/evidencias/files/${archivo._id}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="archivo-link"
+                                title={`Descargar ${archivo.nombreOriginal}`}
+                              >
+                                {getFileIcon(archivo.tipoMime)} {archivo.nombreOriginal}
+                              </a>
+                              {(archivo.tamañoFormateado || archivo.tipoMime) && (
+                                <div className="archivo-info">
+                                  {archivo.tamañoFormateado}
+                                  {archivo.tamañoFormateado && archivo.tipoMime && ' • '}
+                                  {archivo.tipoMime}
+                                </div>
                               )}
                             </li>
                           ))}
                         </ul>
-                      ) : 'Sin archivos'}
+                      ) : (
+                        <span style={{ color: '#9ca3af', fontStyle: 'italic' }}>
+                          Sin archivos
+                        </span>
+                      )}
                     </td>
                   </tr>
                 ))}

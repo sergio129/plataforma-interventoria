@@ -424,3 +424,33 @@
   --danger: #ef4444;
   --shadow: 0 10px 30px rgba(2,6,23,0.08);
 }
+
+/* Estilos para enlaces de descarga de archivos */
+.archivo-link {
+  color: #0066cc;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  font-size: 13px;
+}
+
+.archivo-link:hover {
+  background-color: rgba(0, 102, 204, 0.08);
+  text-decoration: underline;
+}
+
+.archivo-info {
+  margin-left: 20px;
+  color: #666;
+  font-size: 11px;
+}
+
+.usuario-info {
+  color: #374151;
+  font-weight: 500;
+  font-size: 13px;
+}
