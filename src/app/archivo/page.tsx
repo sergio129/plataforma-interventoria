@@ -159,6 +159,58 @@ function ArchivoContent() {
     setSelectedRadicado(null);
   };
 
+  const handleSubmitNewRadicado = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const formData = new FormData(e.currentTarget);
+      
+      const radicadoData = {
+        fechaOficio: formData.get('fechaOficio'),
+        tipoOficio: formData.get('tipoOficio'),
+        asunto: formData.get('asunto'),
+        resumen: formData.get('resumen'),
+        destinatario: formData.get('destinatario'),
+        cargoDestinatario: formData.get('cargoDestinatario') || '',
+        entidadDestinatario: formData.get('entidadDestinatario') || '',
+        emailDestinatario: formData.get('emailDestinatario') || '',
+        prioridad: formData.get('prioridad'),
+        categoria: formData.get('categoria'),
+        requiereRespuesta: formData.get('requiereRespuesta') === 'on',
+        esConfidencial: formData.get('esConfidencial') === 'on',
+        observaciones: formData.get('observaciones') || ''
+      };
+
+      const response = await fetch('/api/archivo/radicados', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        },
+        body: JSON.stringify(radicadoData),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        toast.success(`Radicado ${result.data.consecutivo} creado exitosamente`);
+        setShowForm(false);
+        // Recargar la lista de radicados
+        cargarRadicados();
+        // Limpiar el formulario
+        (e.target as HTMLFormElement).reset();
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.error || 'Error al crear el radicado');
+      }
+    } catch (error: any) {
+      console.error('Error creating radicado:', error);
+      toast.error('Error de conexión al crear el radicado');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (permissionsLoading) {
     return <div className="loading">Cargando permisos...</div>;
   }
@@ -497,6 +549,208 @@ function ArchivoContent() {
                   />
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Nuevo Radicado */}
+      {showForm && (
+        <div className="modal-overlay" onClick={() => setShowForm(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <h2>➕ Nuevo Radicado</h2>
+                <p className="modal-subtitle">Crear un nuevo radicado</p>
+              </div>
+              <button 
+                className="close-button"
+                onClick={() => setShowForm(false)}
+                title="Cerrar"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="modal-body">
+              <form onSubmit={handleSubmitNewRadicado}>
+                <div className="form-grid">
+                  <div className="form-group">
+                    <label htmlFor="fechaOficio">📅 Fecha del Oficio *</label>
+                    <input
+                      type="date"
+                      id="fechaOficio"
+                      name="fechaOficio"
+                      required
+                      className="form-input"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="tipoOficio">📋 Tipo de Oficio *</label>
+                    <select id="tipoOficio" name="tipoOficio" required className="form-select">
+                      <option value="">Seleccionar tipo</option>
+                      <option value="oficio">Oficio</option>
+                      <option value="memorando">Memorando</option>
+                      <option value="circular">Circular</option>
+                      <option value="resolucion">Resolución</option>
+                      <option value="carta">Carta</option>
+                      <option value="informe">Informe</option>
+                      <option value="solicitud">Solicitud</option>
+                      <option value="respuesta">Respuesta</option>
+                    </select>
+                  </div>
+
+                  <div className="form-group full-width">
+                    <label htmlFor="asunto">📝 Asunto *</label>
+                    <input
+                      type="text"
+                      id="asunto"
+                      name="asunto"
+                      required
+                      placeholder="Ingrese el asunto del documento"
+                      className="form-input"
+                      maxLength={200}
+                    />
+                  </div>
+
+                  <div className="form-group full-width">
+                    <label htmlFor="resumen">📋 Resumen *</label>
+                    <textarea
+                      id="resumen"
+                      name="resumen"
+                      required
+                      placeholder="Ingrese un resumen del contenido"
+                      className="form-textarea"
+                      rows={3}
+                      maxLength={500}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="destinatario">👤 Destinatario *</label>
+                    <input
+                      type="text"
+                      id="destinatario"
+                      name="destinatario"
+                      required
+                      placeholder="Nombre del destinatario"
+                      className="form-input"
+                      maxLength={100}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="cargoDestinatario">💼 Cargo Destinatario</label>
+                    <input
+                      type="text"
+                      id="cargoDestinatario"
+                      name="cargoDestinatario"
+                      placeholder="Cargo del destinatario"
+                      className="form-input"
+                      maxLength={100}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="entidadDestinatario">🏢 Entidad Destinatario</label>
+                    <input
+                      type="text"
+                      id="entidadDestinatario"
+                      name="entidadDestinatario"
+                      placeholder="Entidad del destinatario"
+                      className="form-input"
+                      maxLength={200}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="emailDestinatario">📧 Email Destinatario</label>
+                    <input
+                      type="email"
+                      id="emailDestinatario"
+                      name="emailDestinatario"
+                      placeholder="email@ejemplo.com"
+                      className="form-input"
+                      maxLength={100}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="prioridad">⚡ Prioridad *</label>
+                    <select id="prioridad" name="prioridad" required className="form-select">
+                      <option value="media">Media</option>
+                      <option value="baja">Baja</option>
+                      <option value="alta">Alta</option>
+                      <option value="urgente">Urgente</option>
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="categoria">📂 Categoría *</label>
+                    <select id="categoria" name="categoria" required className="form-select">
+                      <option value="">Seleccionar categoría</option>
+                      <option value="contractual">Contractual</option>
+                      <option value="tecnico">Técnico</option>
+                      <option value="financiero">Financiero</option>
+                      <option value="administrativo">Administrativo</option>
+                      <option value="legal">Legal</option>
+                      <option value="ambiental">Ambiental</option>
+                    </select>
+                  </div>
+
+                  <div className="form-check-group">
+                    <label className="form-check">
+                      <input
+                        type="checkbox"
+                        name="requiereRespuesta"
+                      />
+                      <span className="checkmark">✓</span>
+                      Requiere respuesta
+                    </label>
+                  </div>
+
+                  <div className="form-check-group">
+                    <label className="form-check">
+                      <input
+                        type="checkbox"
+                        name="esConfidencial"
+                      />
+                      <span className="checkmark">🔒</span>
+                      Documento confidencial
+                    </label>
+                  </div>
+
+                  <div className="form-group full-width">
+                    <label htmlFor="observaciones">📝 Observaciones</label>
+                    <textarea
+                      id="observaciones"
+                      name="observaciones"
+                      placeholder="Observaciones adicionales..."
+                      className="form-textarea"
+                      rows={2}
+                      maxLength={500}
+                    />
+                  </div>
+                </div>
+
+                <div className="form-actions">
+                  <button 
+                    type="button" 
+                    className="btn btn-outline"
+                    onClick={() => setShowForm(false)}
+                  >
+                    ❌ Cancelar
+                  </button>
+                  <button 
+                    type="submit" 
+                    className="btn btn-primary"
+                    disabled={loading}
+                  >
+                    {loading ? '⏳ Creando...' : '✅ Crear Radicado'}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </div>
@@ -1010,6 +1264,114 @@ function ArchivoContent() {
 
         .files-section {
           margin-top: 1rem;
+        }
+
+        /* Estilos del Formulario */
+        .form-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 1rem;
+          margin-bottom: 2rem;
+        }
+
+        .form-group {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+
+        .form-group.full-width {
+          grid-column: 1 / -1;
+        }
+
+        .form-group label {
+          font-weight: 600;
+          color: #374151;
+          font-size: 0.875rem;
+        }
+
+        .form-input, .form-select, .form-textarea {
+          padding: 0.75rem;
+          border: 1px solid #d1d5db;
+          border-radius: 6px;
+          font-size: 0.875rem;
+          transition: all 0.2s;
+        }
+
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+          outline: none;
+          border-color: #3b82f6;
+          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .form-textarea {
+          resize: vertical;
+          min-height: 80px;
+        }
+
+        .form-check-group {
+          grid-column: 1 / -1;
+          display: flex;
+          gap: 1rem;
+          margin: 0.5rem 0;
+        }
+
+        .form-check {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          cursor: pointer;
+          user-select: none;
+        }
+
+        .form-check input[type="checkbox"] {
+          display: none;
+        }
+
+        .form-check .checkmark {
+          width: 20px;
+          height: 20px;
+          border: 2px solid #d1d5db;
+          border-radius: 4px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 12px;
+          color: transparent;
+          transition: all 0.2s;
+        }
+
+        .form-check input[type="checkbox"]:checked + .checkmark {
+          background-color: #3b82f6;
+          border-color: #3b82f6;
+          color: white;
+        }
+
+        .form-actions {
+          display: flex;
+          justify-content: flex-end;
+          gap: 1rem;
+          padding-top: 1rem;
+          border-top: 1px solid #e5e7eb;
+        }
+
+        @media (max-width: 768px) {
+          .form-grid {
+            grid-template-columns: 1fr;
+          }
+          
+          .modal-content {
+            width: 95vw;
+            max-height: 95vh;
+          }
+          
+          .modal-header {
+            padding: 1rem;
+          }
+          
+          .form-actions {
+            flex-direction: column;
+          }
         }
       `}</style>
     </div>
