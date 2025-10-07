@@ -42,6 +42,36 @@ async function verifyAuth(request: NextRequest) {
   }
 }
 
+async function hasPermission(userId: string, resource: string, action: string): Promise<boolean> {
+  try {
+    // Importar modelos necesarios
+    const { default: Usuario } = await import('../../../models/Usuario');
+    const { default: Rol } = await import('../../../models/Rol');
+    
+    // Obtener usuario con su rol poblado
+    const usuario = await Usuario.findById(userId).populate('rol');
+    if (!usuario || !usuario.rol) {
+      console.log('Usuario sin rol encontrado');
+      return false;
+    }
+
+    // Buscar el permiso específico en el rol
+    const permiso = usuario.rol.permisos?.find((p: any) => p.recurso === resource);
+    if (!permiso) {
+      console.log(`No se encontró permiso para recurso: ${resource}`);
+      return false;
+    }
+
+    // Verificar si tiene la acción específica
+    const tieneAccion = permiso.acciones.includes(action);
+    console.log(`Permiso ${resource}:${action} para usuario ${userId}: ${tieneAccion}`);
+    return tieneAccion;
+  } catch (error) {
+    console.error('Error verificando permisos:', error);
+    return false;
+  }
+}
+
 function generateFileName(originalName: string): string {
   const timestamp = Date.now();
   const random = crypto.randomBytes(8).toString('hex');
@@ -317,10 +347,11 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Verificar permisos (solo el creador o admin puede editar)
-    if (evidenciaExistente.creadoPor.toString() !== user.userId && user.role !== 'admin') {
+    // Verificar permisos de actualización
+    const puedeActualizar = await hasPermission(user.userId, 'evidencias', 'actualizar');
+    if (!puedeActualizar) {
       return NextResponse.json(
-        { error: 'No tienes permisos para editar esta evidencia' },
+        { error: 'No tienes permisos para editar evidencias' },
         { status: 403 }
       );
     }
@@ -424,10 +455,11 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // Verificar permisos (solo el creador o admin puede eliminar)
-    if (evidenciaExistente.creadoPor.toString() !== user.userId && user.role !== 'admin') {
+    // Verificar permisos de eliminación
+    const puedeEliminar = await hasPermission(user.userId, 'evidencias', 'eliminar');
+    if (!puedeEliminar) {
       return NextResponse.json(
-        { error: 'No tienes permisos para eliminar esta evidencia' },
+        { error: 'No tienes permisos para eliminar evidencias' },
         { status: 403 }
       );
     }

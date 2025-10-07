@@ -41,7 +41,7 @@ function getFileIcon(tipoMime?: string): string {
 }
 
 export default function EvidenciasPage() {
-  const { canRead, canCreate, loading: permissionsLoading } = useMenuGeneration();
+  const { canRead, canCreate, canUpdate, canDelete, loading: permissionsLoading } = useMenuGeneration();
   const [evidencias, setEvidencias] = useState<Evidencia[]>([]);
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -230,15 +230,13 @@ export default function EvidenciasPage() {
   }
 
   function canEditEvidencia(evidencia: Evidencia): boolean {
-    // Por ahora, usar los mismos permisos que para crear
-    // En una implementación completa, deberías verificar si es el creador
-    return canCreate('evidencias');
+    // Verificar si tiene permisos de actualización para evidencias
+    return canUpdate('evidencias');
   }
 
   function canDeleteEvidencia(evidencia: Evidencia): boolean {
-    // Por ahora, usar los mismos permisos que para crear
-    // En una implementación completa, deberías verificar si es el creador
-    return canCreate('evidencias');
+    // Verificar si tiene permisos de eliminación para evidencias  
+    return canDelete('evidencias');
   }
 
   // Mostrar loading mientras se cargan los permisos
