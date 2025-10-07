@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { usePermissions } from '../hooks/usePermissions';
+import FileUpload from '../components/FileUpload';
+import FileList from '../components/FileList';
 
 interface Radicado {
   _id: string;
@@ -11,8 +13,14 @@ interface Radicado {
   tipoOficio: string;
   asunto: string;
   resumen: string;
+  observaciones?: string;
   destinatario: string;
+  cargoDestinatario?: string;
+  entidadDestinatario?: string;
+  emailDestinatario?: string;
   remitente?: string;
+  cargoRemitente?: string;
+  entidadRemitente?: string;
   estado: string;
   prioridad: string;
   categoria: string;
@@ -52,6 +60,9 @@ export default function ArchivoPage() {
     categoria: ''
   });
   const [showForm, setShowForm] = useState(false);
+  const [selectedRadicado, setSelectedRadicado] = useState<Radicado | null>(null);
+  const [showDetail, setShowDetail] = useState(false);
+  const [fileRefreshTrigger, setFileRefreshTrigger] = useState(0);
 
   const { canAccessDocuments, loading: permissionsLoading, hasPermission } = usePermissions();
 
@@ -97,6 +108,20 @@ export default function ArchivoPage() {
       month: '2-digit',
       day: '2-digit'
     });
+  };
+
+  const handleVerDetalle = (radicado: Radicado) => {
+    setSelectedRadicado(radicado);
+    setShowDetail(true);
+  };
+
+  const handleFileUploadSuccess = () => {
+    setFileRefreshTrigger(prev => prev + 1);
+  };
+
+  const handleCloseDetail = () => {
+    setShowDetail(false);
+    setSelectedRadicado(null);
   };
 
   if (permissionsLoading) {
@@ -278,13 +303,25 @@ export default function ArchivoPage() {
                   </div>
 
                   <div className="card-actions">
-                    <button className="btn btn-sm btn-outline">
+                    <button 
+                      className="btn btn-sm btn-outline"
+                      onClick={() => handleVerDetalle(radicado)}
+                      title="Ver detalles y gestionar archivos"
+                    >
                       👁️ Ver Detalles
                     </button>
-                    <button className="btn btn-sm btn-outline">
+                    <button 
+                      className="btn btn-sm btn-outline"
+                      onClick={() => {/* TODO: Implementar edición */}}
+                      disabled
+                    >
                       ✏️ Editar
                     </button>
-                    <button className="btn btn-sm btn-outline">
+                    <button 
+                      className="btn btn-sm btn-outline"
+                      onClick={() => handleVerDetalle(radicado)}
+                      title="Gestionar archivos adjuntos"
+                    >
                       📎 Archivos
                     </button>
                   </div>
@@ -294,6 +331,141 @@ export default function ArchivoPage() {
           </div>
         )}
       </div>
+
+      {/* Modal de Detalle del Radicado */}
+      {showDetail && selectedRadicado && (
+        <div className="modal-overlay" onClick={handleCloseDetail}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <h2>📄 Detalle del Radicado</h2>
+                <p className="modal-subtitle">{selectedRadicado.consecutivo}</p>
+              </div>
+              <button 
+                className="close-button"
+                onClick={handleCloseDetail}
+                title="Cerrar"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="modal-body">
+              {/* Información del Radicado */}
+              <div className="detail-section">
+                <h3>📋 Información General</h3>
+                <div className="detail-grid">
+                  <div className="detail-item">
+                    <label>Consecutivo:</label>
+                    <span className="consecutivo-highlight">{selectedRadicado.consecutivo}</span>
+                  </div>
+                  <div className="detail-item">
+                    <label>Fecha de Oficio:</label>
+                    <span>{formatDate(selectedRadicado.fechaOficio)}</span>
+                  </div>
+                  <div className="detail-item">
+                    <label>Tipo:</label>
+                    <span className="capitalize">{selectedRadicado.tipoOficio}</span>
+                  </div>
+                  <div className="detail-item">
+                    <label>Estado:</label>
+                    <span className={`status-badge ${selectedRadicado.estado}`}>
+                      {selectedRadicado.estado.toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="detail-item">
+                    <label>Prioridad:</label>
+                    <span className={`priority-badge ${selectedRadicado.prioridad}`}>
+                      {selectedRadicado.prioridad.toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="detail-item">
+                    <label>Categoría:</label>
+                    <span className="capitalize">{selectedRadicado.categoria}</span>
+                  </div>
+                </div>
+
+                <div className="detail-item full-width">
+                  <label>Asunto:</label>
+                  <p className="asunto-text">{selectedRadicado.asunto}</p>
+                </div>
+
+                <div className="detail-item full-width">
+                  <label>Resumen:</label>
+                  <p className="resumen-text">{selectedRadicado.resumen}</p>
+                </div>
+
+                {selectedRadicado.observaciones && (
+                  <div className="detail-item full-width">
+                    <label>Observaciones:</label>
+                    <p className="observaciones-text">{selectedRadicado.observaciones}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Información de Contacto */}
+              <div className="detail-section">
+                <h3>👥 Información de Contacto</h3>
+                <div className="detail-grid">
+                  <div className="detail-item">
+                    <label>Destinatario:</label>
+                    <span>{selectedRadicado.destinatario}</span>
+                  </div>
+                  {selectedRadicado.cargoDestinatario && (
+                    <div className="detail-item">
+                      <label>Cargo:</label>
+                      <span>{selectedRadicado.cargoDestinatario}</span>
+                    </div>
+                  )}
+                  {selectedRadicado.entidadDestinatario && (
+                    <div className="detail-item">
+                      <label>Entidad:</label>
+                      <span>{selectedRadicado.entidadDestinatario}</span>
+                    </div>
+                  )}
+                  {selectedRadicado.remitente && (
+                    <div className="detail-item">
+                      <label>Remitente:</label>
+                      <span>{selectedRadicado.remitente}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Gestión de Archivos */}
+              <div className="detail-section">
+                <h3>📎 Gestión de Archivos</h3>
+                
+                {/* Subida de Archivos */}
+                <div className="upload-section">
+                  <h4>Subir Nuevo Archivo</h4>
+                  <FileUpload
+                    radicadoId={selectedRadicado._id}
+                    categoria="oficio"
+                    esConfidencial={selectedRadicado.esConfidencial}
+                    onUploadSuccess={handleFileUploadSuccess}
+                    onUploadError={(error) => alert(`Error: ${error}`)}
+                    acceptedTypes={['.pdf', '.jpg', '.jpeg', '.png', '.gif', '.doc', '.docx']}
+                    maxSize={10}
+                    multiple={true}
+                  />
+                </div>
+
+                {/* Lista de Archivos */}
+                <div className="files-section">
+                  <FileList
+                    radicadoId={selectedRadicado._id}
+                    editable={hasPermission('archivo', 'actualizar')}
+                    refreshTrigger={fileRefreshTrigger}
+                    onFileDelete={() => setFileRefreshTrigger(prev => prev + 1)}
+                    onFileUpdate={() => setFileRefreshTrigger(prev => prev + 1)}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style jsx>{`
         .archivo-container {
@@ -598,6 +770,211 @@ export default function ArchivoPage() {
           .card-actions {
             flex-wrap: wrap;
           }
+
+          .modal-content {
+            width: 95vw;
+            max-height: 95vh;
+            margin: 2.5vh auto;
+          }
+
+          .detail-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+          }
+
+          .modal-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+          }
+
+          .close-button {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+          }
+        }
+
+        /* Estilos del Modal */
+        .modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-color: rgba(0, 0, 0, 0.75);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+          padding: 1rem;
+        }
+
+        .modal-content {
+          background: white;
+          border-radius: 12px;
+          max-width: 1200px;
+          width: 90vw;
+          max-height: 90vh;
+          overflow-y: auto;
+          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+          position: relative;
+        }
+
+        .modal-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 2rem 2rem 1rem 2rem;
+          border-bottom: 1px solid #e5e7eb;
+          position: sticky;
+          top: 0;
+          background: white;
+          z-index: 10;
+        }
+
+        .modal-header h2 {
+          font-size: 1.5rem;
+          font-weight: 700;
+          color: #1f2937;
+          margin: 0;
+        }
+
+        .modal-subtitle {
+          font-size: 1rem;
+          color: #6b7280;
+          margin: 0.25rem 0 0 0;
+        }
+
+        .close-button {
+          background: none;
+          border: none;
+          font-size: 1.5rem;
+          color: #6b7280;
+          cursor: pointer;
+          padding: 0.5rem;
+          border-radius: 50%;
+          transition: all 0.2s;
+        }
+
+        .close-button:hover {
+          background-color: #f3f4f6;
+          color: #1f2937;
+        }
+
+        .modal-body {
+          padding: 2rem;
+        }
+
+        .detail-section {
+          margin-bottom: 2rem;
+          padding-bottom: 2rem;
+          border-bottom: 1px solid #f3f4f6;
+        }
+
+        .detail-section:last-child {
+          border-bottom: none;
+          margin-bottom: 0;
+        }
+
+        .detail-section h3 {
+          font-size: 1.25rem;
+          font-weight: 600;
+          color: #1f2937;
+          margin: 0 0 1.5rem 0;
+          padding-bottom: 0.5rem;
+          border-bottom: 2px solid #e5e7eb;
+        }
+
+        .detail-section h4 {
+          font-size: 1.1rem;
+          font-weight: 600;
+          color: #374151;
+          margin: 0 0 1rem 0;
+        }
+
+        .detail-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+          gap: 1.5rem;
+          margin-bottom: 1rem;
+        }
+
+        .detail-item {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+
+        .detail-item.full-width {
+          grid-column: 1 / -1;
+        }
+
+        .detail-item label {
+          font-weight: 600;
+          color: #374151;
+          font-size: 0.875rem;
+          text-transform: uppercase;
+          letter-spacing: 0.025em;
+        }
+
+        .detail-item span {
+          color: #1f2937;
+          font-weight: 500;
+        }
+
+        .consecutivo-highlight {
+          background-color: #dbeafe;
+          color: #1d4ed8;
+          padding: 0.25rem 0.5rem;
+          border-radius: 4px;
+          font-weight: 700;
+          display: inline-block;
+        }
+
+        .capitalize {
+          text-transform: capitalize;
+        }
+
+        .status-badge, .priority-badge {
+          padding: 0.25rem 0.75rem;
+          border-radius: 12px;
+          font-size: 0.75rem;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.025em;
+        }
+
+        .status-badge.pendiente { background-color: #fef3c7; color: #92400e; }
+        .status-badge.enviado { background-color: #dbeafe; color: #1e40af; }
+        .status-badge.recibido { background-color: #d1fae5; color: #065f46; }
+        .status-badge.archivado { background-color: #f3f4f6; color: #374151; }
+
+        .priority-badge.baja { background-color: #f3f4f6; color: #6b7280; }
+        .priority-badge.media { background-color: #fef3c7; color: #92400e; }
+        .priority-badge.alta { background-color: #fed7d7; color: #c53030; }
+        .priority-badge.urgente { background-color: #fecaca; color: #dc2626; }
+
+        .asunto-text, .resumen-text, .observaciones-text {
+          color: #1f2937;
+          line-height: 1.6;
+          margin: 0;
+          padding: 1rem;
+          background-color: #f9fafb;
+          border-radius: 8px;
+          border-left: 4px solid #3b82f6;
+        }
+
+        .upload-section {
+          margin-bottom: 2rem;
+          padding: 1.5rem;
+          background-color: #f8fafc;
+          border-radius: 8px;
+          border: 2px dashed #cbd5e0;
+        }
+
+        .files-section {
+          margin-top: 1rem;
         }
       `}</style>
     </div>

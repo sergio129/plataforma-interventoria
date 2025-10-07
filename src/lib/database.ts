@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { initGridFS } from './storage/gridfsStorage';
 
 // Configuración de la conexión a MongoDB basada en src/config/database.ts
 export class DatabaseConfig {
@@ -36,6 +37,14 @@ export class DatabaseConfig {
       this.isConnected = true;
       console.log('✅ Conectado exitosamente a MongoDB');
       console.log(`📂 Base de datos: ${mongoose.connection.db?.databaseName}`);
+      
+      // Inicializar GridFS
+      try {
+        initGridFS();
+        console.log('📁 GridFS inicializado correctamente');
+      } catch (gridfsError) {
+        console.error('⚠️ Error inicializando GridFS:', gridfsError);
+      }
       
       // Configurar eventos de conexión
       this.setupConnectionEvents();

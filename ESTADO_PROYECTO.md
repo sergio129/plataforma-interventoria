@@ -173,7 +173,7 @@ interface IProyecto {
 ---
 
 ### 4. **🆕 Módulo de Archivo de Interventoría**
-**Estado:** ✅ **COMPLETADO**
+**Estado:** ✅ **COMPLETADO - CON GESTIÓN DE ARCHIVOS**
 
 #### Funcionalidades Implementadas:
 - ✅ **Consecutivo automático** de radicados (RAD-2025-0001)
@@ -181,21 +181,50 @@ interface IProyecto {
 - ✅ **Estados:** Borrador, Enviado, Recibido, Archivado
 - ✅ **Prioridades:** Baja, Media, Alta, Urgente
 - ✅ **Información completa:** Destinatario, remitente, asunto, resumen
-- ✅ **Archivos adjuntos:** PDFs e imágenes digitalizadas
+- ✅ **Archivos adjuntos:** PDFs e imágenes digitalizadas **COMPLETADO**
 - ✅ **Categorización:** Por tipo de documento y etiquetas
 - ✅ **Seguimiento:** Fechas de vencimiento y respuestas
 - ✅ **Confidencialidad:** Control de acceso a documentos sensibles
 - ✅ **Relación con proyectos:** Vinculación opcional
+- ✅ **🆕 Sistema de Subida de Archivos:** Drag & Drop, validación completa
+- ✅ **🆕 Gestión Visual de Archivos:** Lista, previsualización, descarga
+- ✅ **🆕 Modal de Detalle:** Vista completa con gestión de archivos
+- ✅ **🆕 Control de Versiones:** Eliminación suave y metadatos
+
+#### Cumplimiento del PDF ✅
+> **"El aplicativo debe llevar el consecutivo de los radicados, fecha del oficio, a quien va dirigido, un resumen del mismo y la posibilidad de guardar una imagen o PDF del oficio digitalizado."**
+
+**✅ TODOS LOS REQUERIMIENTOS CUMPLIDOS**
+
+#### Gestión de Archivos (NUEVO):
+- ✅ **Subida múltiple:** Drag & drop o selección
+- ✅ **Tipos soportados:** PDF, JPG, PNG, GIF, DOC, DOCX
+- ✅ **Validaciones:** Tamaño (10MB), tipo, duplicados
+- ✅ **Categorización:** Oficio, evidencia, adjunto, respaldo
+- ✅ **Seguridad:** Control de confidencialidad y permisos
+- ✅ **Visualización:** Previsualización de PDFs e imágenes
+- ✅ **Descarga:** Individual o masiva
+- ✅ **Metadatos:** Edición de descripción y categoría
 
 #### API Endpoints:
 ```
-GET    /api/archivo/radicados              # Listar con filtros
-GET    /api/archivo/radicados/estadisticas # Estadísticas
-GET    /api/archivo/radicados/consecutivo  # Generar consecutivo
-GET    /api/archivo/radicados/:id          # Obtener por ID
-POST   /api/archivo/radicados              # Crear nuevo
-PUT    /api/archivo/radicados/:id          # Actualizar
-DELETE /api/archivo/radicados/:id          # Eliminar
+# Radicados
+GET    /api/archivo                       # Listar con filtros
+POST   /api/archivo                       # Crear nuevo
+
+# Archivos (NUEVO)
+POST   /api/archivo/files                 # Subir archivos
+GET    /api/archivo/files                 # Listar archivos
+GET    /api/archivo/files/[id]            # Descargar/ver archivo
+PUT    /api/archivo/files/[id]            # Editar metadatos
+DELETE /api/archivo/files/[id]            # Eliminar archivo
+```
+
+#### Componentes UI (NUEVOS):
+```
+src/app/components/
+├── FileUpload.tsx      # Subida con drag & drop
+└── FileList.tsx        # Lista visual de archivos
 ```
 
 #### Interfaz Visual:
