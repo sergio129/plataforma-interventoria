@@ -52,6 +52,8 @@ export default function EvidenciasPage() {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [dataLoaded, setDataLoaded] = useState(false);
+  const [editingEvidencia, setEditingEvidencia] = useState<Evidencia | null>(null);
+  const [showEditForm, setShowEditForm] = useState(false);
 
   useEffect(() => {
     if (permissionsLoading) return; // Esperar a que se carguen los permisos
@@ -151,6 +153,92 @@ export default function EvidenciasPage() {
     } finally {
       setUploading(false);
     }
+  }
+
+  async function handleEdit(evidencia: Evidencia) {
+    setEditingEvidencia(evidencia);
+    setForm({
+      titulo: evidencia.titulo,
+      descripcion: evidencia.descripcion,
+      categoria: evidencia.categoria,
+      fecha: evidencia.fecha
+    });
+    setShowEditForm(true);
+  }
+
+  async function handleUpdate(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingEvidencia) return;
+
+    setError(null);
+    setUploading(true);
+
+    try {
+      const res = await fetch(`/api/evidencias?id=${editingEvidencia._id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form)
+      });
+
+      const responseData = await res.json();
+
+      if (!res.ok) {
+        throw new Error(responseData.error || 'Error actualizando evidencia');
+      }
+
+      // Actualizar la lista de evidencias
+      setEvidencias(prev => 
+        prev.map(ev => 
+          ev._id === editingEvidencia._id ? responseData.data : ev
+        )
+      );
+
+      setShowEditForm(false);
+      setEditingEvidencia(null);
+      setForm({
+        fecha: new Date().toISOString().split('T')[0]
+      });
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function handleDelete(evidencia: Evidencia) {
+    if (!window.confirm(`¿Estás seguro de que deseas eliminar la evidencia "${evidencia.titulo}"?`)) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/evidencias?id=${evidencia._id}`, {
+        method: 'DELETE'
+      });
+
+      const responseData = await res.json();
+
+      if (!res.ok) {
+        throw new Error(responseData.error || 'Error eliminando evidencia');
+      }
+
+      // Remover de la lista
+      setEvidencias(prev => prev.filter(ev => ev._id !== evidencia._id));
+      
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  function canEditEvidencia(evidencia: Evidencia): boolean {
+    // Por ahora, usar los mismos permisos que para crear
+    // En una implementación completa, deberías verificar si es el creador
+    return canCreate('evidencias');
+  }
+
+  function canDeleteEvidencia(evidencia: Evidencia): boolean {
+    // Por ahora, usar los mismos permisos que para crear
+    // En una implementación completa, deberías verificar si es el creador
+    return canCreate('evidencias');
   }
 
   // Mostrar loading mientras se cargan los permisos
@@ -316,6 +404,85 @@ export default function EvidenciasPage() {
               </div>
             </div>
           )}
+
+          {showEditForm && (
+            <div className="modal-overlay" onClick={() => setShowEditForm(false)}>
+              <div className="modal-card" onClick={e => e.stopPropagation()}>
+                <div className="modal-header">
+                  <span className="modal-icon">✏️</span>
+                  <h3>Editar Evidencia</h3>
+                  <button className="close-btn" onClick={() => setShowEditForm(false)} aria-label="Cerrar">&times;</button>
+                </div>
+                <div className="modal-body">
+                  <form onSubmit={handleUpdate}>
+                    <div className="form-group">
+                      <label>Título <span className="asterisco">*</span></label>
+                      <input 
+                        name="titulo" 
+                        value={form.titulo || ''} 
+                        onChange={handleChange} 
+                        required 
+                        placeholder="Ingresa el título de la evidencia"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Descripción <span className="asterisco">*</span></label>
+                      <textarea 
+                        name="descripcion" 
+                        value={form.descripcion || ''} 
+                        onChange={handleChange} 
+                        required 
+                        placeholder="Describe la evidencia..."
+                        rows={4}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Categoría <span className="asterisco">*</span></label>
+                      <select 
+                        name="categoria" 
+                        value={form.categoria || ''} 
+                        onChange={handleChange} 
+                        required
+                      >
+                        <option value="">Selecciona una categoría</option>
+                        <option value="documentos">Documentos</option>
+                        <option value="imagenes">Imágenes</option>
+                        <option value="videos">Videos</option>
+                        <option value="reportes">Reportes</option>
+                        <option value="certificados">Certificados</option>
+                        <option value="otros">Otros</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label>Fecha <span className="asterisco">*</span></label>
+                      <input 
+                        type="date" 
+                        name="fecha" 
+                        value={form.fecha || ''} 
+                        onChange={handleChange} 
+                        required 
+                      />
+                    </div>
+                    
+                    <div className="info-box">
+                      <p><strong>Nota:</strong> Para modificar archivos, deberás eliminar y crear una nueva evidencia.</p>
+                    </div>
+                    
+                    <div className="form-actions">
+                      <button type="submit" className="btn primary" disabled={uploading}>
+                        {uploading ? 'Actualizando...' : 'Actualizar Evidencia'}
+                      </button>
+                      <button type="button" className="btn ghost" onClick={() => setShowEditForm(false)}>
+                        Cancelar
+                      </button>
+                    </div>
+                    
+                    {error && <div className="error-message">{error}</div>}
+                  </form>
+                </div>
+              </div>
+            </div>
+          )}
           
           {loading ? (
             <div className="loading-state">Cargando evidencias...</div>
@@ -342,6 +509,7 @@ export default function EvidenciasPage() {
                   <th>Fecha</th>
                   <th>Creado por</th>
                   <th>Archivos</th>
+                  <th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -400,6 +568,28 @@ export default function EvidenciasPage() {
                           Sin archivos
                         </span>
                       )}
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        {canEditEvidencia(ev) && (
+                          <button
+                            className="btn-icon edit"
+                            onClick={() => handleEdit(ev)}
+                            title="Editar evidencia"
+                          >
+                            ✏️
+                          </button>
+                        )}
+                        {canDeleteEvidencia(ev) && (
+                          <button
+                            className="btn-icon delete"
+                            onClick={() => handleDelete(ev)}
+                            title="Eliminar evidencia"
+                          >
+                            🗑️
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}

@@ -288,3 +288,168 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export async function PUT(request: NextRequest) {
+  try {
+    const user = await verifyAuth(request);
+    if (!user) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+
+    await connectToDatabase();
+
+    const { searchParams } = new URL(request.url);
+    const evidenciaId = searchParams.get('id');
+
+    if (!evidenciaId) {
+      return NextResponse.json(
+        { error: 'ID de evidencia requerido' },
+        { status: 400 }
+      );
+    }
+
+    // Buscar la evidencia existente
+    const evidenciaExistente = await Evidencia.findById(evidenciaId);
+    if (!evidenciaExistente) {
+      return NextResponse.json(
+        { error: 'Evidencia no encontrada' },
+        { status: 404 }
+      );
+    }
+
+    // Verificar permisos (solo el creador o admin puede editar)
+    if (evidenciaExistente.creadoPor.toString() !== user.userId && user.role !== 'admin') {
+      return NextResponse.json(
+        { error: 'No tienes permisos para editar esta evidencia' },
+        { status: 403 }
+      );
+    }
+
+    const body = await request.json();
+    const { titulo, descripcion, categoria, fecha } = body;
+
+    // Validaciones básicas
+    if (!titulo || !descripcion || !categoria) {
+      return NextResponse.json(
+        { error: 'Faltan campos requeridos' },
+        { status: 400 }
+      );
+    }
+
+    // Actualizar la evidencia
+    evidenciaExistente.titulo = titulo;
+    evidenciaExistente.descripcion = descripcion;
+    evidenciaExistente.categoria = categoria;
+    evidenciaExistente.fecha = fecha ? new Date(fecha) : evidenciaExistente.fecha;
+    evidenciaExistente.fechaActualizacion = new Date();
+
+    const evidenciaActualizada = await evidenciaExistente.save();
+    await evidenciaActualizada.populate('creadoPor', 'nombre apellido');
+    await evidenciaActualizada.populate({
+      path: 'archivos',
+      model: 'File',
+      select: '_id nombreOriginal tamaño tipoMime'
+    });
+
+    // Agregar tamañoFormateado manualmente después del populate
+    if (evidenciaActualizada.archivos && Array.isArray(evidenciaActualizada.archivos)) {
+      evidenciaActualizada.archivos.forEach((archivo: any) => {
+        if (archivo && archivo.tamaño) {
+          const bytes = archivo.tamaño;
+          if (bytes === 0) {
+            archivo.tamañoFormateado = '0 Bytes';
+          } else {
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            archivo.tamañoFormateado = parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+          }
+        }
+      });
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: evidenciaActualizada
+    });
+
+  } catch (error) {
+    console.error('Error actualizando evidencia:', error);
+    
+    if (error.name === 'ValidationError') {
+      return NextResponse.json(
+        { 
+          error: 'Error de validación', 
+          details: error.message
+        },
+        { status: 400 }
+      );
+    }
+    
+    return NextResponse.json(
+      { 
+        error: 'Error interno del servidor',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const user = await verifyAuth(request);
+    if (!user) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+
+    await connectToDatabase();
+
+    const { searchParams } = new URL(request.url);
+    const evidenciaId = searchParams.get('id');
+
+    if (!evidenciaId) {
+      return NextResponse.json(
+        { error: 'ID de evidencia requerido' },
+        { status: 400 }
+      );
+    }
+
+    // Buscar la evidencia existente
+    const evidenciaExistente = await Evidencia.findById(evidenciaId);
+    if (!evidenciaExistente) {
+      return NextResponse.json(
+        { error: 'Evidencia no encontrada' },
+        { status: 404 }
+      );
+    }
+
+    // Verificar permisos (solo el creador o admin puede eliminar)
+    if (evidenciaExistente.creadoPor.toString() !== user.userId && user.role !== 'admin') {
+      return NextResponse.json(
+        { error: 'No tienes permisos para eliminar esta evidencia' },
+        { status: 403 }
+      );
+    }
+
+    // Eliminación lógica (soft delete)
+    evidenciaExistente.eliminado = true;
+    evidenciaExistente.fechaActualizacion = new Date();
+    await evidenciaExistente.save();
+
+    return NextResponse.json({
+      success: true,
+      message: 'Evidencia eliminada correctamente'
+    });
+
+  } catch (error) {
+    console.error('Error eliminando evidencia:', error);
+    return NextResponse.json(
+      { 
+        error: 'Error interno del servidor',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      },
+      { status: 500 }
+    );
+  }
+}

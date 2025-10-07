@@ -39,7 +39,6 @@ export async function GET(
 
     // Verificar que GridFS esté inicializado
     try {
-      const { initGridFS } = await import('../../../../../lib/storage/gridfsStorage');
       initGridFS();
       console.log('GridFS inicializado correctamente');
     } catch (initError) {
