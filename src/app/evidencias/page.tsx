@@ -54,6 +54,8 @@ export default function EvidenciasPage() {
   const [dataLoaded, setDataLoaded] = useState(false);
   const [editingEvidencia, setEditingEvidencia] = useState<Evidencia | null>(null);
   const [showEditForm, setShowEditForm] = useState(false);
+  const [evidenciaToDelete, setEvidenciaToDelete] = useState<Evidencia | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
     if (permissionsLoading) return; // Esperar a que se carguen los permisos
@@ -205,27 +207,40 @@ export default function EvidenciasPage() {
     }
   }
 
-  async function handleDelete(evidencia: Evidencia) {
-    if (!window.confirm(`¿Estás seguro de que deseas eliminar la evidencia "${evidencia.titulo}"?`)) {
-      return;
-    }
+  function showDeleteDialog(evidencia: Evidencia) {
+    setEvidenciaToDelete(evidencia);
+    setShowDeleteConfirm(true);
+  }
+
+  async function confirmDelete() {
+    if (!evidenciaToDelete) return;
+
+    setShowDeleteConfirm(false);
 
     try {
-      const res = await fetch(`/api/evidencias?id=${evidencia._id}`, {
+      const res = await fetch(`/api/evidencias?id=${evidenciaToDelete._id}`, {
         method: 'DELETE'
       });
 
       const responseData = await res.json();
 
       if (!res.ok) {
-        throw new Error(responseData.error || 'Error eliminando evidencia');
+        // Si es error de permisos, mostrar mensaje específico
+        if (res.status === 403) {
+          setError(`${responseData.error}. Por favor verifica tus permisos en el módulo de Roles (/roles).`);
+        } else {
+          throw new Error(responseData.error || 'Error eliminando evidencia');
+        }
+        return;
       }
 
       // Remover de la lista
-      setEvidencias(prev => prev.filter(ev => ev._id !== evidencia._id));
+      setEvidencias(prev => prev.filter(ev => ev._id !== evidenciaToDelete._id));
+      setEvidenciaToDelete(null);
       
     } catch (err: any) {
       setError(err.message);
+      setEvidenciaToDelete(null);
     }
   }
 
@@ -581,7 +596,7 @@ export default function EvidenciasPage() {
                         {canDeleteEvidencia(ev) && (
                           <button
                             className="btn-icon delete"
-                            onClick={() => handleDelete(ev)}
+                            onClick={() => setEvidenciaToDelete(ev)}
                             title="Eliminar evidencia"
                           >
                             🗑️
@@ -596,6 +611,42 @@ export default function EvidenciasPage() {
           )}
         </div>
       </main>
+
+      {/* Modal de confirmación de eliminación */}
+      {evidenciaToDelete && (
+        <div className="modal-overlay" onClick={() => setEvidenciaToDelete(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Confirmar Eliminación</h2>
+              <button 
+                onClick={() => setEvidenciaToDelete(null)}
+                className="btn-close"
+              >
+                ×
+              </button>
+            </div>
+            <div className="modal-body">
+              <p>¿Estás seguro de que deseas eliminar la evidencia <strong>"{evidenciaToDelete.titulo}"</strong>?</p>
+              <p className="text-warning">⚠️ Esta acción no se puede deshacer y eliminará también todos los archivos asociados.</p>
+            </div>
+            <div className="modal-footer">
+              <button
+                onClick={() => setEvidenciaToDelete(null)}
+                className="btn-cancel"
+                style={{ marginRight: '10px' }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="btn-delete"
+              >
+                Eliminar Definitivamente
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
