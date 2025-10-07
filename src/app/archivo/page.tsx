@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'react-hot-toast';
 import DynamicMenu from '../components/DynamicMenu';
 import UserProfile from '../components/UserProfile';
 import { useMenuGeneration } from '../hooks/useMenuGeneration';
@@ -478,7 +479,7 @@ function ArchivoContent() {
                     categoria="oficio"
                     esConfidencial={selectedRadicado.esConfidencial}
                     onUploadSuccess={handleFileUploadSuccess}
-                    onUploadError={(error) => alert(`Error: ${error}`)}
+                    onUploadError={(error) => {/* Toast ya manejado en FileUpload */}}
                     acceptedTypes={['.pdf', '.jpg', '.jpeg', '.png', '.gif', '.doc', '.docx']}
                     maxSize={10}
                     multiple={true}

@@ -56,9 +56,9 @@ export class GridFSStorage {
         reject(error);
       });
 
-      uploadStream.on('finish', (file: any) => {
-        console.log('Archivo subido exitosamente a GridFS:', file._id);
-        resolve(file._id);
+      uploadStream.on('finish', () => {
+        console.log('Archivo subido exitosamente a GridFS:', uploadStream.id);
+        resolve(uploadStream.id);
       });
 
       // Escribir el buffer al stream

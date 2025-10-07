@@ -203,6 +203,6 @@ FileSchema.methods.tieneAcceso = function(usuarioId: string) {
   );
 };
 
-const File = mongoose.model<IFile>('File', FileSchema);
+const File = mongoose.models.File || mongoose.model<IFile>('File', FileSchema);
 
 export default File;

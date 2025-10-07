@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '../../../../config/database';
 import { getUserFromRequest } from '../../../../lib/auth';
+import Radicado from '../../../../modules/archivo/models/Radicado';
 
 // Modelo temporal para Radicados (puedes crear un modelo completo después)
 interface Radicado {
@@ -48,85 +49,40 @@ export async function GET(request: NextRequest) {
     const prioridad = searchParams.get('prioridad');
     const search = searchParams.get('search');
 
-    // Por ahora retornamos datos de ejemplo
-    // En el futuro, esto se conectará con el modelo real de Radicados
-    const radicadosEjemplo: Radicado[] = [
-      {
-        _id: '1',
-        consecutivo: 'RAD-2025-001',
-        fechaRadicado: new Date('2025-01-15'),
-        fechaOficio: new Date('2025-01-14'),
-        tipoOficio: 'Oficio',
-        asunto: 'Solicitud de información sobre el proyecto de infraestructura',
-        resumen: 'Se solicita información detallada sobre el avance del proyecto de infraestructura vial en el sector norte de la ciudad.',
-        destinatario: 'Director de Proyectos',
-        cargoDestinatario: 'Director',
-        entidadDestinatario: 'Secretaría de Infraestructura',
-        estado: 'enviado',
-        prioridad: 'alta',
-        categoria: 'consulta',
-        requiereRespuesta: true,
-        fechaVencimiento: new Date('2025-01-25'),
-        esConfidencial: false,
-        creadoPor: user.userId,
-        fechaCreacion: new Date('2025-01-15'),
-        activo: true
-      },
-      {
-        _id: '2',
-        consecutivo: 'RAD-2025-002',
-        fechaRadicado: new Date('2025-01-16'),
-        fechaOficio: new Date('2025-01-16'),
-        tipoOficio: 'Circular',
-        asunto: 'Actualización de procedimientos de seguridad',
-        resumen: 'Circular informativa sobre los nuevos procedimientos de seguridad implementados en todas las obras públicas.',
-        destinatario: 'Todos los Contratistas',
-        estado: 'recibido',
-        prioridad: 'media',
-        categoria: 'informativo',
-        requiereRespuesta: false,
-        esConfidencial: false,
-        creadoPor: user.userId,
-        fechaCreacion: new Date('2025-01-16'),
-        activo: true
-      }
-    ];
+    // Construir filtros para la consulta
+    const filtros: any = { activo: true };
 
-    // Aplicar filtros básicos
-    let radicadosFiltrados = radicadosEjemplo;
-
+    // Filtro de búsqueda por texto
     if (search) {
-      const searchLower = search.toLowerCase();
-      radicadosFiltrados = radicadosFiltrados.filter(r => 
-        r.asunto.toLowerCase().includes(searchLower) ||
-        r.consecutivo.toLowerCase().includes(searchLower) ||
-        r.destinatario.toLowerCase().includes(searchLower)
-      );
+      filtros.$or = [
+        { asunto: { $regex: search, $options: 'i' } },
+        { consecutivo: { $regex: search, $options: 'i' } },
+        { destinatario: { $regex: search, $options: 'i' } },
+        { resumen: { $regex: search, $options: 'i' } }
+      ];
     }
 
-    if (tipo) {
-      radicadosFiltrados = radicadosFiltrados.filter(r => r.tipoOficio === tipo);
-    }
+    // Filtros específicos
+    if (tipo) filtros.tipoOficio = tipo;
+    if (estado) filtros.estado = estado;
+    if (prioridad) filtros.prioridad = prioridad;
 
-    if (estado) {
-      radicadosFiltrados = radicadosFiltrados.filter(r => r.estado === estado);
-    }
-
-    if (prioridad) {
-      radicadosFiltrados = radicadosFiltrados.filter(r => r.prioridad === prioridad);
-    }
-
-    // Paginación
-    const startIndex = (page - 1) * limit;
-    const endIndex = startIndex + limit;
-    const radicadosPaginados = radicadosFiltrados.slice(startIndex, endIndex);
-
-    const total = radicadosFiltrados.length;
+    // Obtener total de documentos que cumplen los filtros
+    const total = await Radicado.countDocuments(filtros);
     const totalPages = Math.ceil(total / limit);
+
+    // Obtener radicados con paginación
+    const radicados = await Radicado.find(filtros)
+      .populate('creadoPor', 'nombre email')
+      .populate('proyectoId', 'nombre codigo')
+      .sort({ fechaRadicado: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .lean();
 
     return NextResponse.json({
       success: true,
-      data: radicadosPaginados,
+      data: radicados,
       pagination: {
         currentPage: page,
         totalPages,
@@ -185,10 +141,8 @@ export async function POST(request: NextRequest) {
     const year = new Date().getFullYear();
     const consecutivo = `RAD-${year}-${String(Date.now()).slice(-6)}`;
 
-    const nuevoRadicado: Radicado = {
-      _id: Date.now().toString(),
-      consecutivo,
-      fechaRadicado: new Date(),
+    // Crear el radicado en la base de datos
+    const nuevoRadicado = new Radicado({
       fechaOficio: new Date(fechaOficio),
       tipoOficio: tipoOficio || 'Oficio',
       asunto,
@@ -201,24 +155,21 @@ export async function POST(request: NextRequest) {
       remitente,
       cargoRemitente,
       entidadRemitente,
-      estado: 'borrador',
       prioridad: prioridad || 'media',
       categoria: categoria || 'general',
       proyectoId,
       requiereRespuesta: requiereRespuesta || false,
       fechaVencimiento: fechaVencimiento ? new Date(fechaVencimiento) : undefined,
       esConfidencial: esConfidencial || false,
-      creadoPor: user.userId,
-      fechaCreacion: new Date(),
-      activo: true
-    };
+      creadoPor: user.userId
+    });
 
-    // En el futuro, aquí se guardará en la base de datos
-    // await RadicadoModel.create(nuevoRadicado);
+    const radicadoGuardado = await nuevoRadicado.save();
+    await radicadoGuardado.populate('creadoPor', 'nombre email');
 
     return NextResponse.json({
       success: true,
-      data: nuevoRadicado,
+      data: radicadoGuardado,
       message: 'Radicado creado exitosamente'
     }, { status: 201 });
 

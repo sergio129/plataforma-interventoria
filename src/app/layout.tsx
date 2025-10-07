@@ -2,6 +2,7 @@ import './globals.css'
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import TokenSync from './components/TokenSync'
+import ToastProvider from './components/ToastProvider'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -19,6 +20,7 @@ export default function RootLayout({
     <html lang="es">
       <body className={inter.className}>
         <TokenSync />
+        <ToastProvider />
         {children}
       </body>
     </html>

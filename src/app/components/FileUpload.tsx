@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useRef } from 'react';
+import { toast } from 'react-hot-toast';
 
 interface FileUploadProps {
   radicadoId?: string;
@@ -23,7 +24,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
   onUploadSuccess,
   onUploadError,
   acceptedTypes = ['.pdf', '.jpg', '.jpeg', '.png', '.gif', '.doc', '.docx'],
-  maxSize = 10,
+  maxSize = 2,
   multiple = false
 }) => {
   const [uploading, setUploading] = useState(false);
@@ -81,6 +82,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
     for (const file of filesToUpload) {
       const error = validateFile(file);
       if (error) {
+        toast.error(error);
         onUploadError?.(error);
         return;
       }
@@ -146,6 +148,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
         });
       }, 2000);
 
+      toast.success(`Archivo "${result.data.nombreOriginal}" subido exitosamente`);
       onUploadSuccess?.(result.data);
       
       // Limpiar formulario
@@ -161,7 +164,9 @@ const FileUpload: React.FC<FileUploadProps> = ({
         delete newProgress[fileId];
         return newProgress;
       });
-      onUploadError?.(error.message || 'Error desconocido al subir archivo');
+      const errorMessage = error.message || 'Error desconocido al subir archivo';
+      toast.error(errorMessage);
+      onUploadError?.(errorMessage);
     } finally {
       setUploading(false);
     }

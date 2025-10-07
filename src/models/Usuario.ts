@@ -113,11 +113,9 @@ UsuarioSchema.pre('save', function(next) {
   next();
 });
 
-// Índices
-UsuarioSchema.index({ email: 1 });
-UsuarioSchema.index({ cedula: 1 });
+// Índices adicionales (email y cedula ya tienen unique: true)
 UsuarioSchema.index({ tipoUsuario: 1 });
 UsuarioSchema.index({ estado: 1 });
 UsuarioSchema.index({ fechaCreacion: -1 });
 
-export const Usuario = mongoose.model<IUsuario>('Usuario', UsuarioSchema);
+export const Usuario = mongoose.models.Usuario || mongoose.model<IUsuario>('Usuario', UsuarioSchema);
