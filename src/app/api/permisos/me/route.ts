@@ -3,6 +3,9 @@ import { connectToDatabase } from '../../../../lib/database';
 import { getUserFromRequest } from '../../../../lib/auth';
 import { PermisosManager } from '../../../../lib/models/Rol';
 
+// Marcar la ruta como dinámica
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     await connectToDatabase();
@@ -60,8 +63,8 @@ export async function GET(request: NextRequest) {
     
     // Transformar permisos a formato simple para el frontend
     const permisosSimplificados = (permisos || []).map(p => {
-      // Extraer datos del documento de Mongoose
-      const permiso = p._doc || p;
+      // Extraer datos del documento de Mongoose de forma segura
+      const permiso = (p as any)?._doc || p;
       return {
         recurso: permiso.recurso,
         acciones: permiso.acciones || []

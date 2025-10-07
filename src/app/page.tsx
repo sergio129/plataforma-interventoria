@@ -28,19 +28,6 @@ export default function Home() {
           >
             Iniciar Sesión
           </a>
-          <a 
-            href="/dashboard" 
-            style={{
-              backgroundColor: '#7c3aed',
-              color: 'white',
-              padding: '0.75rem 1.5rem',
-              borderRadius: '0.5rem',
-              textDecoration: 'none',
-              fontWeight: '600'
-            }}
-          >
-            Dashboard
-          </a>
         </div>
       </div>
     </div>

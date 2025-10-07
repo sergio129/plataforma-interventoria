@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { usePermissions } from '../../hooks/usePermissions';
+import { usePermissions } from '../hooks/usePermissions';
 
 interface Radicado {
   _id: string;
@@ -53,7 +53,7 @@ export default function ArchivoPage() {
   });
   const [showForm, setShowForm] = useState(false);
 
-  const { canAccess, permissionsLoading } = usePermissions();
+  const { canAccessDocuments, loading: permissionsLoading, hasPermission } = usePermissions();
 
   useEffect(() => {
     if (!permissionsLoading) {
@@ -103,7 +103,7 @@ export default function ArchivoPage() {
     return <div className="loading">Cargando permisos...</div>;
   }
 
-  if (!canAccess('documentos')) {
+  if (!canAccessDocuments()) {
     return (
       <div className="access-denied">
         <div className="access-denied-content">

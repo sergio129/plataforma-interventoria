@@ -4,6 +4,9 @@ import jwt from 'jsonwebtoken';
 import { connectToDatabase } from '../../../../lib/database';
 import { Usuario } from '../../../../lib/models/Usuario';
 
+// Marcar la ruta como dinámica
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     await connectToDatabase();

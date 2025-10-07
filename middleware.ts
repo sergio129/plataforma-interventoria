@@ -7,13 +7,28 @@ const protectedRoutes: Record<string, string[]> = {
   '/roles': ['administrador'], // Solo administradores
   '/usuarios': ['administrador'], // Solo administradores  
   '/proyectos': ['administrador', 'interventor', 'contratista', 'supervisor'], // Múltiples roles
+  '/archivo': ['administrador', 'interventor', 'contratista', 'supervisor'], // Archivo de interventoría
   '/documentos': ['administrador', 'interventor', 'contratista', 'supervisor'], // Múltiples roles
   '/reportes': ['administrador', 'interventor', 'supervisor'], // Solo roles que pueden generar reportes
 };
 
+function isValidToken(token: string): boolean {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const now = Date.now() / 1000;
+    return payload.exp > now; // Verificar que el token no haya expirado
+  } catch (e) {
+    return false;
+  }
+}
+
 function getUserFromToken(token: string): { tipoUsuario: string } | null {
   try {
-    // Decodificar token JWT manualmente (sin verificar por ahora en middleware)
+    // Primero verificar si el token es válido
+    if (!isValidToken(token)) {
+      return null;
+    }
+    
     const payload = JSON.parse(atob(token.split('.')[1]));
     return { tipoUsuario: payload.tipoUsuario || 'usuario' };
   } catch (error) {
@@ -29,24 +44,26 @@ export function middleware(request: NextRequest) {
   const requiredRoles = protectedRoutes[pathname];
   
   if (requiredRoles !== undefined) {
-    // Obtener token de las cookies o headers (para el middleware usaremos cookies por seguridad)
-    const token = request.cookies.get('token')?.value || 
+    // Obtener token de las cookies o headers (probar ambos nombres de token)
+    const token = request.cookies.get('auth_token')?.value || 
+                  request.cookies.get('token')?.value ||
                   request.headers.get('authorization')?.replace('Bearer ', '');
     
     if (!token) {
-      // No hay token, crear response para redirect pero agregar header especial para el cliente
-      const response = NextResponse.redirect(new URL('/auth/signin', request.url));
-      response.headers.set('x-middleware-redirect', 'auth-required');
-      return response;
+      // No hay token, redirigir al login con parámetro de redirección
+      const redirectUrl = new URL('/auth/signin', request.url);
+      redirectUrl.searchParams.set('redirect', pathname.slice(1)); // Remover el '/' inicial
+      return NextResponse.redirect(redirectUrl);
     }
     
     const user = getUserFromToken(token);
     
     if (!user) {
-      // Token inválido
-      const response = NextResponse.redirect(new URL('/auth/signin', request.url));
-      response.headers.set('x-middleware-redirect', 'invalid-token');
-      return response;
+      // Token inválido, redirigir al login
+      const redirectUrl = new URL('/auth/signin', request.url);
+      redirectUrl.searchParams.set('redirect', pathname.slice(1));
+      redirectUrl.searchParams.set('error', 'token-expired');
+      return NextResponse.redirect(redirectUrl);
     }
     
     // Si la ruta requiere roles específicos, verificar permisos

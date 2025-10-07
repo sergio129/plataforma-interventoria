@@ -1,31 +1,103 @@
 "use client";
-import React from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useSearchParams } from 'next/navigation';
 import DynamicMenu from '../components/DynamicMenu';
 import UserProfile from '../components/UserProfile';
 import { useMenuGeneration } from '../hooks/useMenuGeneration';
 
+function isAuthenticated(): boolean {
+  if (typeof window === 'undefined') return false;
+  
+  const token = localStorage.getItem('auth_token') || localStorage.getItem('token');
+  if (!token) return false;
+  
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const now = Date.now() / 1000;
+    return payload.exp > now; // Verificar que el token no haya expirado
+  } catch (e) {
+    return false;
+  }
+}
+
 function getUserRole(): string {
   try {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    // Decodificar token simple (no validar) para extraer tipoUsuario
+    const token = typeof window !== 'undefined' ? 
+      (localStorage.getItem('auth_token') || localStorage.getItem('token')) : null;
+    
     if (token) {
       const payload = JSON.parse(atob(token.split('.')[1]));
       return payload.tipoUsuario || 'usuario';
     }
   } catch (e) {
-    // ignore
+    console.error('Error decoding token:', e);
   }
-  // En dev, asumir administrador si no hay token
-  return 'administrador';
+  return '';
 }
 
-export default function DashboardPage() {
+function DashboardContent() {
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(true);
+  const [authenticated, setAuthenticated] = useState(false);
   const role = getUserRole();
   const searchParams = useSearchParams();
   const error = searchParams.get('error');
   const { loading, menuItems, canAccess } = useMenuGeneration();
+
+  useEffect(() => {
+    const checkAuth = () => {
+      const authStatus = isAuthenticated();
+      setAuthenticated(authStatus);
+      setIsLoading(false);
+      
+      if (!authStatus) {
+        // Redirigir al login si no está autenticado
+        router.replace('/auth/signin?redirect=dashboard');
+        return;
+      }
+    };
+
+    checkAuth();
+  }, [router]);
+
+  // Mostrar loading mientras se verifica autenticación
+  if (isLoading) {
+    return (
+      <div style={{ 
+        minHeight: '100vh', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        background: 'linear-gradient(135deg, #1e3a8a, #7c3aed)'
+      }}>
+        <div style={{ color: 'white', textAlign: 'center' }}>
+          <div style={{ 
+            width: '32px', 
+            height: '32px', 
+            border: '3px solid rgba(255,255,255,0.3)',
+            borderTop: '3px solid white',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            margin: '0 auto 16px'
+          }}></div>
+          <p>Verificando autenticación...</p>
+        </div>
+        <style jsx>{`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
+  // Si no está autenticado, no mostrar nada (se redirige)
+  if (!authenticated) {
+    return null;
+  }
 
   // Menú se genera dinámicamente
 
@@ -148,5 +220,34 @@ export default function DashboardPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ 
+        minHeight: '100vh', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        background: 'linear-gradient(135deg, #1e3a8a, #7c3aed)'
+      }}>
+        <div style={{ color: 'white', textAlign: 'center' }}>
+          <div style={{ 
+            width: '32px', 
+            height: '32px', 
+            border: '3px solid rgba(255,255,255,0.3)',
+            borderTop: '3px solid white',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            margin: '0 auto 1rem'
+          }}></div>
+          <p>Cargando dashboard...</p>
+        </div>
+      </div>
+    }>
+      <DashboardContent />
+    </Suspense>
   );
 }

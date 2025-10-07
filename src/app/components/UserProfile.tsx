@@ -11,7 +11,7 @@ export default function UserProfile() {
   useEffect(() => {
     // read token and try to fetch user by id
     try {
-      const raw = localStorage.getItem('token');
+      const raw = localStorage.getItem('auth_token') || localStorage.getItem('token');
       if (!raw) return;
       let token = raw;
       try { const parsed = JSON.parse(raw); token = parsed?.token || (typeof parsed === 'string' ? parsed : raw); } catch {}
@@ -41,7 +41,17 @@ export default function UserProfile() {
   }, [open]);
 
   function logout() {
-    try { localStorage.removeItem('token'); } catch (e) {}
+    try { 
+      // Limpiar localStorage
+      localStorage.removeItem('token'); 
+      localStorage.removeItem('auth_token');
+      
+      // Limpiar cookies
+      document.cookie = 'auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    } catch (e) {
+      console.warn('Error al limpiar datos de autenticación:', e);
+    }
     router.push('/auth/signin');
   }
 
