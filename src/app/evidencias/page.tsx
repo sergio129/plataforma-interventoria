@@ -76,6 +76,8 @@ export default function EvidenciasPage() {
       const res = await fetch('/api/evidencias');
       if (!res.ok) throw new Error('Error en la respuesta');
       const data = await res.json();
+      console.log('Datos de evidencias cargados:', data); // Debug temporal
+      console.log('Primer evidencia archivos:', data[0]?.archivos); // Debug archivos
       setEvidencias(Array.isArray(data) ? data : []);
       setDataLoaded(true);
     } catch (err) {
@@ -363,17 +365,25 @@ export default function EvidenciasPage() {
                     <td>
                       {ev.archivos && ev.archivos.length > 0 ? (
                         <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>
-                          {ev.archivos.map((archivo) => (
-                            <li key={archivo._id} style={{ marginBottom: '6px' }}>
-                              <a 
-                                href={`/api/evidencias/files/${archivo._id}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="archivo-link"
-                                title={`Descargar ${archivo.nombreOriginal}`}
-                              >
-                                {getFileIcon(archivo.tipoMime)} {archivo.nombreOriginal}
-                              </a>
+                          {ev.archivos.map((archivo) => {
+                            console.log('Archivo individual:', archivo); // Debug temporal
+                            return (
+                            <li key={archivo._id || 'no-id'} style={{ marginBottom: '6px' }}>
+                              {archivo._id ? (
+                                <a 
+                                  href={`/api/evidencias/files/${archivo._id}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="archivo-link"
+                                  title={`Descargar ${archivo.nombreOriginal}`}
+                                >
+                                  {getFileIcon(archivo.tipoMime)} {archivo.nombreOriginal}
+                                </a>
+                              ) : (
+                                <span className="archivo-link" style={{ color: '#9ca3af', cursor: 'not-allowed' }}>
+                                  {getFileIcon(archivo.tipoMime)} {archivo.nombreOriginal} (No disponible)
+                                </span>
+                              )}
                               {(archivo.tamañoFormateado || archivo.tipoMime) && (
                                 <div className="archivo-info">
                                   {archivo.tamañoFormateado}
@@ -382,7 +392,8 @@ export default function EvidenciasPage() {
                                 </div>
                               )}
                             </li>
-                          ))}
+                            );
+                          })}
                         </ul>
                       ) : (
                         <span style={{ color: '#9ca3af', fontStyle: 'italic' }}>

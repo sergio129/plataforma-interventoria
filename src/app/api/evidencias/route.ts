@@ -78,7 +78,26 @@ export async function GET(request: NextRequest) {
 
     const evidencias = await Evidencia.find(filtro)
       .populate('creadoPor', 'nombre apellido')
-      .populate('archivos', 'nombreOriginal tamaño tipoMime tamañoFormateado')
+      .populate({
+        path: 'archivos',
+        select: '_id nombreOriginal tamaño tipoMime',
+        options: { 
+          transform: function(doc, ret) {
+            if (ret && ret.tamaño) {
+              const bytes = ret.tamaño;
+              if (bytes === 0) {
+                ret.tamañoFormateado = '0 Bytes';
+              } else {
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                ret.tamañoFormateado = parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+              }
+            }
+            return ret;
+          }
+        }
+      })
       .sort({ fecha: -1 });
     
     return NextResponse.json(evidencias);
@@ -199,7 +218,26 @@ export async function POST(request: NextRequest) {
 
     const evidenciaGuardada = await nuevaEvidencia.save();
     await evidenciaGuardada.populate('creadoPor', 'nombre apellido');
-    await evidenciaGuardada.populate('archivos', 'nombreOriginal tamaño tipoMime tamañoFormateado');
+    await evidenciaGuardada.populate({
+      path: 'archivos',
+      select: '_id nombreOriginal tamaño tipoMime',
+      options: { 
+        transform: function(doc, ret) {
+          if (ret && ret.tamaño) {
+            const bytes = ret.tamaño;
+            if (bytes === 0) {
+              ret.tamañoFormateado = '0 Bytes';
+            } else {
+              const k = 1024;
+              const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+              const i = Math.floor(Math.log(bytes) / Math.log(k));
+              ret.tamañoFormateado = parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+          }
+          return ret;
+        }
+      }
+    });
 
     return NextResponse.json({
       success: true,
@@ -223,4 +261,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { 
         error: 'Error interno del servidor',
-        details: process.env.NODE_ENV === 'development' ? error.message : undef
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      },
+      { status: 500 }
+    );
+  }
+}
