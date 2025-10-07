@@ -17,7 +17,12 @@ const ALLOWED_TYPES = [
   'image/png',
   'image/gif',
   'application/msword',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'text/plain', // Archivos .txt
+  'application/vnd.ms-excel', // Excel 97-2003
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // Excel 2007+
+  'application/vnd.ms-powerpoint', // PowerPoint 97-2003
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation' // PowerPoint 2007+
 ];
 
 async function verifyAuth(request: NextRequest) {

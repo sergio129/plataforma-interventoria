@@ -5,7 +5,7 @@ export interface IEvidencia extends Document {
   descripcion: string;
   categoria: string;
   fecha: Date;
-  archivos: string[];
+  archivos: mongoose.Types.ObjectId[]; // Referencias a los archivos en la colección File
   creadoPor: mongoose.Types.ObjectId;
   eliminado: boolean;
   fechaCreacion: Date;
@@ -36,8 +36,8 @@ const EvidenciaSchema: Schema = new Schema({
     default: Date.now 
   },
   archivos: [{
-    type: String,
-    trim: true
+    type: Schema.Types.ObjectId,
+    ref: 'File'
   }],
   creadoPor: { 
     type: Schema.Types.ObjectId, 

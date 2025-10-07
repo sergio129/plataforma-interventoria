@@ -1,6 +1,59 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '../../../config/database';
 import Evidencia from '../../../modules/evidencia/models/Evidencia';
+import File from '../../../modules/archivo/models/File';
+import { GridFSStorage } from '../../../lib/storage/gridfsStorage';
+import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
+
+// Marcar la ruta como dinámica
+export const dynamic = 'force-dynamic';
+
+// Configuración
+const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
+const ALLOWED_TYPES = [
+  'application/pdf',
+  'image/jpeg',
+  'image/jpg', 
+  'image/png',
+  'image/gif',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'text/plain', // Archivos .txt
+  'application/vnd.ms-excel', // Excel 97-2003
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // Excel 2007+
+  'application/vnd.ms-powerpoint', // PowerPoint 97-2003
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation' // PowerPoint 2007+
+];
+
+async function verifyAuth(request: NextRequest) {
+  try {
+    const token = request.cookies.get('token')?.value || 
+                  request.headers.get('authorization')?.replace('Bearer ', '');
+    
+    if (!token) {
+      return null;
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+    return decoded;
+  } catch (error) {
+    return null;
+  }
+}
+
+function generateFileName(originalName: string): string {
+  const timestamp = Date.now();
+  const random = crypto.randomBytes(8).toString('hex');
+  const extension = originalName.split('.').pop() || '';
+  const baseName = originalName.replace(/[^a-zA-Z0-9\.]/g, '_').replace(/\.[^.]*$/, '');
+  
+  return `${timestamp}_${random}_${baseName}.${extension}`;
+}
+
+function calculateChecksum(buffer: Buffer): string {
+  return crypto.createHash('md5').update(buffer).digest('hex');
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -23,7 +76,10 @@ export async function GET(request: NextRequest) {
       ];
     }
 
-    const evidencias = await Evidencia.find(filtro).populate('creadoPor', 'nombre apellido').sort({ fecha: -1 });
+    const evidencias = await Evidencia.find(filtro)
+      .populate('creadoPor', 'nombre apellido')
+      .populate('archivos')
+      .sort({ fecha: -1 });
     
     return NextResponse.json(evidencias);
 
@@ -38,41 +94,137 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const user = await verifyAuth(request);
+    if (!user) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+
     await connectToDatabase();
 
-    const body = await request.json();
-    const { titulo, descripcion, categoria, fecha, archivos } = body;
-
+    const formData = await request.formData();
+    const titulo = formData.get('titulo') as string;
+    const descripcion = formData.get('descripcion') as string;
+    const categoria = formData.get('categoria') as string;
+    const fecha = formData.get('fecha') as string;
+    
     // Validaciones básicas
-    if (!titulo || !descripcion || !categoria || !fecha) {
+    if (!titulo || !descripcion || !categoria) {
       return NextResponse.json(
-        { message: 'Faltan campos requeridos' },
+        { error: 'Faltan campos requeridos' },
         { status: 400 }
       );
     }
 
-    // TODO: Obtener usuario autenticado del token
-    // Por ahora usamos un ID temporal
-    const creadoPor = '507f1f77bcf86cd799439011'; // Temporal
+    // Procesar archivos subidos
+    const archivosIds: string[] = [];
+    const files = formData.getAll('files') as File[];
 
+    for (const file of files) {
+      if (!file || file.size === 0) continue;
+
+      // Validaciones del archivo
+      if (file.size > MAX_FILE_SIZE) {
+        return NextResponse.json(
+          { error: `El archivo "${file.name}" es demasiado grande. Máximo ${MAX_FILE_SIZE / 1024 / 1024}MB` },
+          { status: 400 }
+        );
+      }
+
+      if (!ALLOWED_TYPES.includes(file.type)) {
+        return NextResponse.json(
+          { error: `Tipo de archivo no permitido: ${file.name}` },
+          { status: 400 }
+        );
+      }
+
+      // Leer el archivo y calcular checksum
+      const bytes = await file.arrayBuffer();
+      const buffer = Buffer.from(bytes);
+      const checksum = calculateChecksum(buffer);
+
+      // Generar nombre único para el archivo
+      const fileName = generateFileName(file.name);
+      const extension = file.name.split('.').pop()?.toLowerCase() || '';
+
+      try {
+        // Subir archivo a GridFS
+        const gridfsId = await GridFSStorage.uploadFile(buffer, fileName, {
+          nombreOriginal: file.name,
+          categoria: 'evidencia',
+          creadoPor: user.userId,
+          esConfidencial: false,
+          descripcion: `Archivo adjunto a evidencia: ${titulo}`,
+          tipoMime: file.type,
+          extension
+        });
+
+        // Guardar registro en la base de datos
+        const newFile = new File({
+          nombreOriginal: file.name,
+          nombreArchivo: fileName,
+          gridfsId,
+          tamaño: file.size,
+          tipoMime: file.type,
+          extension,
+          descripcion: `Archivo adjunto a evidencia: ${titulo}`,
+          categoria: 'evidencia',
+          creadoPor: user.userId,
+          esConfidencial: false,
+          checksum,
+          usuariosAutorizados: []
+        });
+
+        const archivoGuardado = await newFile.save();
+        archivosIds.push(archivoGuardado._id);
+
+      } catch (fileError) {
+        console.error('Error subiendo archivo:', fileError);
+        return NextResponse.json(
+          { error: `Error subiendo el archivo: ${file.name}` },
+          { status: 500 }
+        );
+      }
+    }
+
+    // Crear la evidencia
     const nuevaEvidencia = new Evidencia({
       titulo,
       descripcion,
       categoria,
-      fecha: new Date(fecha),
-      archivos: archivos || [],
-      creadoPor,
+      fecha: fecha ? new Date(fecha) : new Date(),
+      archivos: archivosIds,
+      creadoPor: user.userId,
       eliminado: false
     });
 
     const evidenciaGuardada = await nuevaEvidencia.save();
+    await evidenciaGuardada.populate('creadoPor', 'nombre apellido');
+    await evidenciaGuardada.populate('archivos');
 
-    return NextResponse.json(evidenciaGuardada, { status: 201 });
+    return NextResponse.json({
+      success: true,
+      data: evidenciaGuardada
+    }, { status: 201 });
 
   } catch (error) {
     console.error('Error creando evidencia:', error);
+    
+    // Si es un error de validación de Mongoose, devolver detalles
+    if (error.name === 'ValidationError') {
+      return NextResponse.json(
+        { 
+          error: 'Error de validación', 
+          details: error.message
+        },
+        { status: 400 }
+      );
+    }
+    
     return NextResponse.json(
-      { message: 'Error interno del servidor' },
+      { 
+        error: 'Error interno del servidor',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      },
       { status: 500 }
     );
   }

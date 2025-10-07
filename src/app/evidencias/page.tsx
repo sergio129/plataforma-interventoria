@@ -4,14 +4,26 @@ import { useMenuGeneration } from '../hooks/useMenuGeneration';
 import DynamicMenu from '../components/DynamicMenu';
 import './evidencias.css';
 
+interface Archivo {
+  _id: string;
+  nombreOriginal: string;
+  tamaño: number;
+  tipoMime: string;
+  tamañoFormateado: string;
+}
+
 interface Evidencia {
   _id?: string;
   titulo: string;
   descripcion: string;
   categoria: string;
   fecha: string;
-  archivos: string[];
-  creadoPor?: string;
+  archivos: Archivo[];
+  creadoPor?: {
+    _id: string;
+    nombre: string;
+    apellido?: string;
+  };
 }
 
 export default function EvidenciasPage() {
@@ -19,7 +31,9 @@ export default function EvidenciasPage() {
   const [evidencias, setEvidencias] = useState<Evidencia[]>([]);
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState<Partial<Evidencia>>({});
+  const [form, setForm] = useState<Partial<Evidencia>>({
+    fecha: new Date().toISOString().split('T')[0]
+  });
   const [error, setError] = useState<string | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -58,15 +72,15 @@ export default function EvidenciasPage() {
     }
   }
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
+  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
     setForm(f => ({ ...f, [e.target.name]: e.target.value }));
   }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files || []);
     const validFiles = files.filter(file => {
-      if (file.size > 10 * 1024 * 1024) { // 10MB máximo
-        setError(`El archivo ${file.name} es demasiado grande (máx. 10MB)`);
+      if (file.size > 2 * 1024 * 1024) { // 2MB máximo
+        setError(`El archivo ${file.name} es demasiado grande (máx. 2MB)`);
         return false;
       }
       return true;
@@ -79,32 +93,7 @@ export default function EvidenciasPage() {
     setSelectedFiles(prev => prev.filter((_, i) => i !== index));
   }
 
-  async function uploadFiles(): Promise<string[]> {
-    if (selectedFiles.length === 0) return [];
-    
-    const uploadedUrls: string[] = [];
-    
-    for (const file of selectedFiles) {
-      const formData = new FormData();
-      formData.append('file', file);
-      
-      try {
-        const res = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData
-        });
-        
-        if (!res.ok) throw new Error(`Error subiendo ${file.name}`);
-        
-        const result = await res.json();
-        uploadedUrls.push(result.url);
-      } catch (err) {
-        throw new Error(`Error subiendo ${file.name}: ${err.message}`);
-      }
-    }
-    
-    return uploadedUrls;
-  }
+
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -112,27 +101,34 @@ export default function EvidenciasPage() {
     setUploading(true);
     
     try {
-      // Subir archivos primero
-      const archivosUrls = await uploadFiles();
+      // Crear FormData
+      const formData = new FormData();
+      formData.append('titulo', form.titulo || '');
+      formData.append('descripcion', form.descripcion || '');
+      formData.append('categoria', form.categoria || '');
+      formData.append('fecha', form.fecha || '');
       
-      // Crear la evidencia con las URLs de los archivos
-      const evidenciaData = {
-        ...form,
-        archivos: archivosUrls
-      };
+      // Agregar archivos
+      selectedFiles.forEach(file => {
+        formData.append('files', file);
+      });
       
       const res = await fetch('/api/evidencias', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(evidenciaData)
+        body: formData // No establecer Content-Type, el navegador lo hará automáticamente
       });
       
-      if (!res.ok) throw new Error('Error creando evidencia');
+      const responseData = await res.json();
       
-      const nueva = await res.json();
-      setEvidencias(prev => [nueva, ...prev]); // Agregar al inicio sin recargar
+      if (!res.ok) {
+        throw new Error(responseData.error || 'Error creando evidencia');
+      }
+      
+      setEvidencias(prev => [responseData.data, ...prev]); // Agregar al inicio sin recargar
       setShowForm(false);
-      setForm({});
+      setForm({
+        fecha: new Date().toISOString().split('T')[0]
+      });
       setSelectedFiles([]);
     } catch (err: any) {
       setError(err.message);
@@ -263,7 +259,7 @@ export default function EvidenciasPage() {
                           <div className="file-upload-content">
                             <span className="file-upload-icon">📁</span>
                             <span>Haz clic para seleccionar archivos</span>
-                            <small>Documentos, imágenes, videos (máx. 10MB por archivo)</small>
+                            <small>Documentos, imágenes, videos (máx. 2MB por archivo)</small>
                           </div>
                         </label>
                       </div>
@@ -328,11 +324,14 @@ export default function EvidenciasPage() {
                     <td>
                       {ev.archivos && ev.archivos.length > 0 ? (
                         <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>
-                          {ev.archivos.map((a, i) => (
-                            <li key={i}>
-                              <a href={a} target="_blank" rel="noopener noreferrer">
-                                Descargar
-                              </a>
+                          {ev.archivos.map((archivo) => (
+                            <li key={archivo._id}>
+                              <span>{archivo.nombreOriginal}</span>
+                              {archivo.tamañoFormateado && (
+                                <small style={{ marginLeft: '8px', color: '#666' }}>
+                                  ({archivo.tamañoFormateado})
+                                </small>
+                              )}
                             </li>
                           ))}
                         </ul>
