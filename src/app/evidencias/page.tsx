@@ -15,27 +15,41 @@ interface Evidencia {
 }
 
 export default function EvidenciasPage() {
-  const { canRead, canCreate } = useMenuGeneration();
+  const { canRead, canCreate, loading: permissionsLoading } = useMenuGeneration();
   const [evidencias, setEvidencias] = useState<Evidencia[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<Partial<Evidencia>>({});
   const [error, setError] = useState<string | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [dataLoaded, setDataLoaded] = useState(false);
 
   useEffect(() => {
-    if (!canRead('evidencias')) return;
-    loadEvidencias();
-  }, [canRead]);
+    if (permissionsLoading) return; // Esperar a que se carguen los permisos
+    
+    if (!canRead('evidencias')) {
+      setDataLoaded(true);
+      return;
+    }
+    
+    if (!dataLoaded) {
+      loadEvidencias();
+    }
+  }, [canRead, permissionsLoading, dataLoaded]);
 
   async function loadEvidencias() {
+    if (loading || dataLoaded) return; // Evitar múltiples cargas
+    
     setLoading(true);
+    setError(null);
+    
     try {
       const res = await fetch('/api/evidencias');
       if (!res.ok) throw new Error('Error en la respuesta');
       const data = await res.json();
       setEvidencias(Array.isArray(data) ? data : []);
+      setDataLoaded(true);
     } catch (err) {
       setError('Error cargando evidencias');
       console.error('Error:', err);
@@ -116,7 +130,7 @@ export default function EvidenciasPage() {
       if (!res.ok) throw new Error('Error creando evidencia');
       
       const nueva = await res.json();
-      await loadEvidencias(); // Recargar la lista
+      setEvidencias(prev => [nueva, ...prev]); // Agregar al inicio sin recargar
       setShowForm(false);
       setForm({});
       setSelectedFiles([]);
@@ -127,6 +141,23 @@ export default function EvidenciasPage() {
     }
   }
 
+  // Mostrar loading mientras se cargan los permisos
+  if (permissionsLoading) {
+    return (
+      <div className="evidencias-page">
+        <aside style={{ position: 'sticky', top: 24 }}>
+          <DynamicMenu />
+        </aside>
+        <main className="evidencias-main">
+          <div className="evidencias-card">
+            <div className="loading-state">Verificando permisos...</div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Mostrar error si no tiene permisos
   if (!canRead('evidencias')) {
     return (
       <div className="evidencias-page">
