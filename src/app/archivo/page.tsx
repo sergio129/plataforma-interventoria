@@ -95,6 +95,7 @@ function ArchivoContent() {
     categoria: ''
   });
   const [showForm, setShowForm] = useState(false);
+  const [radicadoEditData, setRadicadoEditData] = useState<Radicado | null>(null);
   const [selectedRadicado, setSelectedRadicado] = useState<Radicado | null>(null);
   const [showDetail, setShowDetail] = useState(false);
   const [fileRefreshTrigger, setFileRefreshTrigger] = useState(0);
@@ -159,7 +160,12 @@ function ArchivoContent() {
     setSelectedRadicado(null);
   };
 
-  const handleSubmitNewRadicado = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleEditRadicado = (radicado: Radicado) => {
+    setRadicadoEditData(radicado);
+    setShowForm(true);
+  };
+
+  const handleSubmitRadicado = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
 
@@ -182,26 +188,39 @@ function ArchivoContent() {
         observaciones: formData.get('observaciones') || ''
       };
 
-      const response = await fetch('/api/archivo/radicados', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-        },
-        body: JSON.stringify(radicadoData),
-      });
+      let response;
+      if (radicadoEditData) {
+        // Editar radicado existente
+        response = await fetch(`/api/archivo/radicados/${radicadoEditData._id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+          },
+          body: JSON.stringify(radicadoData),
+        });
+      } else {
+        // Crear nuevo radicado
+        response = await fetch('/api/archivo/radicados', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+          },
+          body: JSON.stringify(radicadoData),
+        });
+      }
 
       if (response.ok) {
         const result = await response.json();
-        toast.success(`Radicado ${result.data.consecutivo} creado exitosamente`);
+        toast.success(radicadoEditData ? 'Radicado actualizado correctamente' : `Radicado ${result.data.consecutivo} creado exitosamente`);
         setShowForm(false);
-        // Recargar la lista de radicados
+        setRadicadoEditData(null);
         cargarRadicados();
-        // Limpiar el formulario
         (e.target as HTMLFormElement).reset();
       } else {
         const errorData = await response.json();
-        toast.error(errorData.error || 'Error al crear el radicado');
+        toast.error(errorData.error || (radicadoEditData ? 'Error al actualizar el radicado' : 'Error al crear el radicado'));
       }
     } catch (error: any) {
       console.error('Error creating radicado:', error);
@@ -398,9 +417,8 @@ function ArchivoContent() {
                       👁️ Ver Detalles
                     </button>
                     <button 
-                      className="btn btn-sm btn-outline"
-                      onClick={() => {/* TODO: Implementar edición */}}
-                      disabled
+                      className="btn btn-sm btn-primary"
+                      onClick={() => handleEditRadicado(radicado)}
                     >
                       ✏️ Editar
                     </button>
@@ -554,18 +572,18 @@ function ArchivoContent() {
         </div>
       )}
 
-      {/* Modal de Nuevo Radicado */}
+      {/* Modal Crear/Editar Radicado */}
       {showForm && (
-        <div className="modal-overlay" onClick={() => setShowForm(false)}>
+        <div className="modal-overlay" onClick={() => { setShowForm(false); setRadicadoEditData(null); }}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <div>
-                <h2>➕ Nuevo Radicado</h2>
-                <p className="modal-subtitle">Crear un nuevo radicado</p>
+                <h2>{radicadoEditData ? '✏️ Editar Radicado' : '➕ Nuevo Radicado'}</h2>
+                <p className="modal-subtitle">{radicadoEditData ? 'Modifica los datos del radicado' : 'Crear un nuevo radicado'}</p>
               </div>
               <button 
                 className="close-button"
-                onClick={() => setShowForm(false)}
+                onClick={() => { setShowForm(false); setRadicadoEditData(null); }}
                 title="Cerrar"
               >
                 ✕
@@ -573,7 +591,7 @@ function ArchivoContent() {
             </div>
 
             <div className="modal-body">
-              <form onSubmit={handleSubmitNewRadicado}>
+              <form onSubmit={handleSubmitRadicado}>
                 <div className="form-grid">
                   <div className="form-group">
                     <label htmlFor="fechaOficio">📅 Fecha del Oficio *</label>
@@ -583,12 +601,13 @@ function ArchivoContent() {
                       name="fechaOficio"
                       required
                       className="form-input"
+                      defaultValue={radicadoEditData?.fechaOficio ? radicadoEditData.fechaOficio.toString().slice(0,10) : ''}
                     />
                   </div>
 
                   <div className="form-group">
                     <label htmlFor="tipoOficio">📋 Tipo de Oficio *</label>
-                    <select id="tipoOficio" name="tipoOficio" required className="form-select">
+                    <select id="tipoOficio" name="tipoOficio" required className="form-select" defaultValue={radicadoEditData?.tipoOficio || ''}>
                       <option value="">Seleccionar tipo</option>
                       <option value="Oficio">Oficio</option>
                       <option value="Memorando">Memorando</option>
@@ -609,6 +628,7 @@ function ArchivoContent() {
                       placeholder="Ingrese el asunto del documento"
                       className="form-input"
                       maxLength={200}
+                      defaultValue={radicadoEditData?.asunto || ''}
                     />
                   </div>
 
@@ -622,6 +642,7 @@ function ArchivoContent() {
                       className="form-textarea"
                       rows={3}
                       maxLength={500}
+                      defaultValue={radicadoEditData?.resumen || ''}
                     />
                   </div>
 
@@ -635,6 +656,7 @@ function ArchivoContent() {
                       placeholder="Nombre del destinatario"
                       className="form-input"
                       maxLength={100}
+                      defaultValue={radicadoEditData?.destinatario || ''}
                     />
                   </div>
 
@@ -647,6 +669,7 @@ function ArchivoContent() {
                       placeholder="Cargo del destinatario"
                       className="form-input"
                       maxLength={100}
+                      defaultValue={radicadoEditData?.cargoDestinatario || ''}
                     />
                   </div>
 
@@ -659,6 +682,7 @@ function ArchivoContent() {
                       placeholder="Entidad del destinatario"
                       className="form-input"
                       maxLength={200}
+                      defaultValue={radicadoEditData?.entidadDestinatario || ''}
                     />
                   </div>
 
@@ -671,12 +695,13 @@ function ArchivoContent() {
                       placeholder="email@ejemplo.com"
                       className="form-input"
                       maxLength={100}
+                      defaultValue={radicadoEditData?.emailDestinatario || ''}
                     />
                   </div>
 
                   <div className="form-group">
                     <label htmlFor="prioridad">⚡ Prioridad *</label>
-                    <select id="prioridad" name="prioridad" required className="form-select">
+                    <select id="prioridad" name="prioridad" required className="form-select" defaultValue={radicadoEditData?.prioridad || 'media'}>
                       <option value="media">Media</option>
                       <option value="baja">Baja</option>
                       <option value="alta">Alta</option>
@@ -686,7 +711,7 @@ function ArchivoContent() {
 
                   <div className="form-group">
                     <label htmlFor="categoria">📂 Categoría *</label>
-                    <select id="categoria" name="categoria" required className="form-select">
+                    <select id="categoria" name="categoria" required className="form-select" defaultValue={radicadoEditData?.categoria || ''}>
                       <option value="">Seleccionar categoría</option>
                       <option value="contractual">Contractual</option>
                       <option value="tecnico">Técnico</option>
@@ -702,6 +727,7 @@ function ArchivoContent() {
                       <input
                         type="checkbox"
                         name="requiereRespuesta"
+                        defaultChecked={radicadoEditData?.requiereRespuesta || false}
                       />
                       <span className="checkmark">✓</span>
                       Requiere respuesta
@@ -713,6 +739,7 @@ function ArchivoContent() {
                       <input
                         type="checkbox"
                         name="esConfidencial"
+                        defaultChecked={radicadoEditData?.esConfidencial || false}
                       />
                       <span className="checkmark">🔒</span>
                       Documento confidencial
@@ -728,6 +755,7 @@ function ArchivoContent() {
                       className="form-textarea"
                       rows={2}
                       maxLength={500}
+                      defaultValue={radicadoEditData?.observaciones || ''}
                     />
                   </div>
                 </div>
@@ -736,7 +764,7 @@ function ArchivoContent() {
                   <button 
                     type="button" 
                     className="btn btn-outline"
-                    onClick={() => setShowForm(false)}
+                    onClick={() => { setShowForm(false); setRadicadoEditData(null); }}
                   >
                     ❌ Cancelar
                   </button>
@@ -745,7 +773,7 @@ function ArchivoContent() {
                     className="btn btn-primary"
                     disabled={loading}
                   >
-                    {loading ? '⏳ Creando...' : '✅ Crear Radicado'}
+                    {loading ? (radicadoEditData ? '⏳ Guardando...' : '⏳ Creando...') : (radicadoEditData ? '💾 Guardar Cambios' : '✅ Crear Radicado')}
                   </button>
                 </div>
               </form>
