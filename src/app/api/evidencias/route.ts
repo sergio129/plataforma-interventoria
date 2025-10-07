@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '../../../config/database';
 import Evidencia from '../../../modules/evidencia/models/Evidencia';
 import File from '../../../modules/archivo/models/File';
+import { PermisosManager } from '../../../lib/models/Rol';
 import { GridFSStorage } from '../../../lib/storage/gridfsStorage';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
@@ -44,30 +45,66 @@ async function verifyAuth(request: NextRequest) {
 
 async function hasPermission(userId: string, resource: string, action: string): Promise<boolean> {
   try {
-    // Importar modelos necesarios
-    const { default: Usuario } = await import('../../../models/Usuario');
-    const { default: Rol } = await import('../../../models/Rol');
+    await connectToDatabase();
     
-    // Obtener usuario con su rol poblado
-    const usuario = await Usuario.findById(userId).populate('rol');
-    if (!usuario || !usuario.rol) {
-      console.log('Usuario sin rol encontrado');
+    console.log(`🔍 Verificando permiso para usuario: ${userId}, recurso: ${resource}, acción: ${action}`);
+    
+    // Usar el mismo sistema que funciona en /api/permisos/me
+    const permisos = await PermisosManager.getPermisosUsuario(userId);
+    console.log(`� Permisos encontrados:`, permisos);
+    
+    // Si no hay permisos por roles asignados, usar fallback por tipoUsuario
+    if (!permisos || permisos.length === 0) {
+      console.log('⚠️ Usuario sin roles asignados, intentando fallback por tipoUsuario');
+      
+      // Obtener datos del usuario del token para el fallback
+      const { Usuario } = await import('../../../lib/models/Usuario');
+      const usuario = await Usuario.findById(userId);
+      
+      if (usuario && usuario.tipoUsuario) {
+        console.log(`🔍 Buscando rol por tipoUsuario: ${usuario.tipoUsuario}`);
+        
+        const { Rol } = await import('../../../lib/models/Rol');
+        const rolPorTipo = await Rol.findOne({ 
+          nombre: { $regex: new RegExp(usuario.tipoUsuario, 'i') },
+          activo: true 
+        });
+        
+        if (rolPorTipo) {
+          console.log(`✅ Rol encontrado por tipoUsuario: ${rolPorTipo.nombre}`);
+          const permisoFallback = rolPorTipo.permisos?.find((p: any) => p.recurso === resource);
+          if (permisoFallback && permisoFallback.acciones.includes(action)) {
+            console.log(`✅ Permiso ${resource}:${action} concedido por fallback`);
+            return true;
+          }
+        }
+      }
+    }
+    
+    // Buscar el permiso específico en los permisos del usuario
+    // Los objetos de Mongoose pueden tener la estructura en _doc
+    const permiso = permisos?.find((p: any) => {
+      const recursoActual = p._doc?.recurso || p.recurso;
+      console.log(`🔍 Comparando recurso: "${recursoActual}" vs "${resource}"`);
+      return recursoActual === resource;
+    });
+    
+    if (!permiso) {
+      console.log(`❌ No se encontró permiso para recurso: ${resource}`);
+      console.log(`📋 Recursos disponibles:`, permisos?.map((p: any) => p._doc?.recurso || p.recurso));
       return false;
     }
 
-    // Buscar el permiso específico en el rol
-    const permiso = usuario.rol.permisos?.find((p: any) => p.recurso === resource);
-    if (!permiso) {
-      console.log(`No se encontró permiso para recurso: ${resource}`);
-      return false;
-    }
+    console.log(`✅ Permiso encontrado:`, permiso._doc || permiso);
 
     // Verificar si tiene la acción específica
-    const tieneAccion = permiso.acciones.includes(action);
-    console.log(`Permiso ${resource}:${action} para usuario ${userId}: ${tieneAccion}`);
+    const acciones = permiso._doc?.acciones || permiso.acciones || [];
+    const tieneAccion = acciones.includes(action);
+    console.log(`🔑 Acciones disponibles:`, acciones);
+    console.log(`✅ Permiso ${resource}:${action} para usuario ${userId}: ${tieneAccion}`);
     return tieneAccion;
   } catch (error) {
-    console.error('Error verificando permisos:', error);
+    console.error('❌ Error verificando permisos:', error);
     return false;
   }
 }

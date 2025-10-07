@@ -111,7 +111,9 @@ RolSchema.methods.getPermisosRecurso = function(recurso: TipoRecurso): IPermiso 
 };
 
 // Crear el modelo
-export const Rol = mongoose.models.Rol || mongoose.model<IRol>('Rol', RolSchema);
+const Rol = mongoose.models.Rol || mongoose.model<IRol>('Rol', RolSchema);
+export { Rol };
+export default Rol;
 
 // Clase utilitaria para manejo de permisos
 export class PermisosManager {
@@ -202,8 +204,15 @@ export class PermisosManager {
 
   /**
    * Crear roles por defecto del sistema
+   * NOTA: Esta función está deshabilitada para usar roles dinámicos de la BD
    */
   static async crearRolesPorDefecto(): Promise<void> {
+    // Los roles se manejan dinámicamente desde la interfaz de administración
+    // No se crean roles hardcodeados
+    console.log('⚠️ crearRolesPorDefecto() deshabilitada - usar roles dinámicos de la BD');
+    return;
+    
+    /* CÓDIGO COMENTADO - ROLES HARDCODEADOS
     try {
       const rolesExistentes = await Rol.countDocuments();
       if (rolesExistentes > 0) {
@@ -355,5 +364,6 @@ export class PermisosManager {
     } catch (error) {
       console.error('❌ Error creando roles por defecto:', error);
     }
+    */
   }
 }

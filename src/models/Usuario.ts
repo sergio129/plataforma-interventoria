@@ -118,4 +118,6 @@ UsuarioSchema.index({ tipoUsuario: 1 });
 UsuarioSchema.index({ estado: 1 });
 UsuarioSchema.index({ fechaCreacion: -1 });
 
-export const Usuario = mongoose.models.Usuario || mongoose.model<IUsuario>('Usuario', UsuarioSchema);
+const Usuario = mongoose.models.Usuario || mongoose.model<IUsuario>('Usuario', UsuarioSchema);
+export { Usuario };
+export default Usuario;
