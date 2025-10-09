@@ -89,7 +89,6 @@ export async function GET(request: NextRequest) {
     const [personal, total] = await Promise.all([
       Personal.find(query)
         .populate('proyectoId', 'nombre codigo')
-        .populate('creadoPor', 'nombre apellido')
         .sort({ fechaCreacion: -1 })
         .skip(skip)
         .limit(limit)
@@ -102,13 +101,11 @@ export async function GET(request: NextRequest) {
       ...persona,
       _id: (persona._id as any).toString(),
       proyectoId: persona.proyectoId ? {
-        ...persona.proyectoId,
-        _id: (persona.proyectoId._id as any).toString()
+        _id: (persona.proyectoId._id as any).toString(),
+        nombre: (persona.proyectoId as any).nombre,
+        codigo: (persona.proyectoId as any).codigo
       } : null,
-      creadoPor: persona.creadoPor ? {
-        ...persona.creadoPor,
-        _id: (persona.creadoPor._id as any).toString()
-      } : null
+      creadoPor: persona.creadoPor ? (persona.creadoPor as any).toString() : null
     }));
 
     const result = {
@@ -167,22 +164,22 @@ export async function POST(request: NextRequest) {
 
     const personalGuardado = await nuevoPersonal.save();
 
-    // Poblar referencias
-    await personalGuardado.populate('proyectoId', 'nombre codigo');
-    await personalGuardado.populate('creadoPor', 'nombre apellido');
+    // Poblar solo proyectoId si existe
+    let personalConReferencias = personalGuardado;
+    if (personalGuardado.proyectoId) {
+      personalConReferencias = await personalGuardado.populate('proyectoId', 'nombre codigo');
+    }
 
     // Convertir a objeto serializable
     const personalSerializable = {
-      ...personalGuardado.toObject(),
-      _id: personalGuardado._id.toString(),
-      proyectoId: personalGuardado.proyectoId ? {
-        ...personalGuardado.proyectoId,
-        _id: personalGuardado.proyectoId._id.toString()
+      ...personalConReferencias.toObject(),
+      _id: personalConReferencias._id.toString(),
+      proyectoId: personalConReferencias.proyectoId ? {
+        _id: personalConReferencias.proyectoId._id.toString(),
+        nombre: personalConReferencias.proyectoId.nombre,
+        codigo: personalConReferencias.proyectoId.codigo
       } : null,
-      creadoPor: personalGuardado.creadoPor ? {
-        ...personalGuardado.creadoPor,
-        _id: personalGuardado.creadoPor._id.toString()
-      } : null
+      creadoPor: personalConReferencias.creadoPor ? personalConReferencias.creadoPor.toString() : null
     };
 
     return NextResponse.json({

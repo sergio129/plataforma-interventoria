@@ -12,10 +12,7 @@ export async function GET(
 
     const { id } = params;
 
-    const personal = await Personal.findById(id)
-      .populate('proyectoId', 'nombre codigo')
-      .populate('creadoPor', 'nombre apellido')
-      .lean();
+    let personal = await Personal.findById(id).lean();
 
     if (!personal) {
       return NextResponse.json(
@@ -24,18 +21,23 @@ export async function GET(
       );
     }
 
+    // Poblar proyectoId si existe
+    if ((personal as any).proyectoId) {
+      personal = await Personal.findById(id)
+        .populate('proyectoId', 'nombre codigo')
+        .lean();
+    }
+
     // Convertir ObjectIds a strings
     const personalSerializable = {
       ...(personal as any),
       _id: (personal as any)._id.toString(),
       proyectoId: (personal as any).proyectoId ? {
-        ...(personal as any).proyectoId,
-        _id: (personal as any).proyectoId._id.toString()
+        _id: (personal as any).proyectoId._id.toString(),
+        nombre: (personal as any).proyectoId.nombre,
+        codigo: (personal as any).proyectoId.codigo
       } : null,
-      creadoPor: (personal as any).creadoPor ? {
-        ...(personal as any).creadoPor,
-        _id: (personal as any).creadoPor._id.toString()
-      } : null
+      creadoPor: (personal as any).creadoPor ? (personal as any).creadoPor.toString() : null
     };
 
     return NextResponse.json({
@@ -87,9 +89,7 @@ export async function PUT(
         fechaActualizacion: new Date()
       },
       { new: true, runValidators: true }
-    )
-      .populate('proyectoId', 'nombre codigo')
-      .populate('creadoPor', 'nombre apellido');
+    );
 
     if (!personalActualizado) {
       return NextResponse.json(
@@ -98,18 +98,22 @@ export async function PUT(
       );
     }
 
+    // Poblar solo proyectoId si existe
+    let personalConReferencias = personalActualizado;
+    if (personalActualizado.proyectoId) {
+      personalConReferencias = await personalActualizado.populate('proyectoId', 'nombre codigo');
+    }
+
     // Convertir a objeto serializable
     const personalSerializable = {
-      ...personalActualizado.toObject(),
-      _id: personalActualizado._id.toString(),
-      proyectoId: personalActualizado.proyectoId ? {
-        ...personalActualizado.proyectoId,
-        _id: personalActualizado.proyectoId._id.toString()
+      ...personalConReferencias.toObject(),
+      _id: personalConReferencias._id.toString(),
+      proyectoId: personalConReferencias.proyectoId ? {
+        _id: personalConReferencias.proyectoId._id.toString(),
+        nombre: personalConReferencias.proyectoId.nombre,
+        codigo: personalConReferencias.proyectoId.codigo
       } : null,
-      creadoPor: personalActualizado.creadoPor ? {
-        ...personalActualizado.creadoPor,
-        _id: personalActualizado.creadoPor._id.toString()
-      } : null
+      creadoPor: personalConReferencias.creadoPor ? personalConReferencias.creadoPor.toString() : null
     };
 
     return NextResponse.json({
