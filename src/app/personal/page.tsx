@@ -144,7 +144,7 @@ function PersonalContent() {
 
       if (response.ok) {
         const data = await response.json();
-        setProyectos(data.data || []);
+        setProyectos(data.data.proyectos || []);
       }
     } catch (err) {
       console.error('Error cargando proyectos:', err);
@@ -262,194 +262,145 @@ function PersonalContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="archivo-container">
       <DynamicMenu />
       <UserProfile />
+      
+      <div className="page-header">
+        <div className="header-content">
+          <h1>👥 Gestión de Personal</h1>
+          <p>Administrar personal de proyectos de interventoría</p>
+        </div>
+        <div className="header-actions">
+          {hasPermission('personal', 'create') && (
+            <button className="btn btn-primary" onClick={() => setShowForm(true)}>
+              ➕ Nuevo Personal
+            </button>
+          )}
+        </div>
+      </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white shadow-lg rounded-lg overflow-hidden">
-          {/* Header */}
-          <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
-            <div className="flex justify-between items-center">
-              <div>
-                <h1 className="text-2xl font-bold text-white">Gestión de Personal</h1>
-                <p className="text-blue-100 mt-1">Administrar personal de proyectos de concesión</p>
-              </div>
-              {hasPermission('personal', 'create') && (
-                <button
-                  onClick={() => setShowForm(true)}
-                  className="bg-white text-blue-600 px-4 py-2 rounded-lg font-medium hover:bg-blue-50 transition-colors"
-                >
-                  + Nuevo Personal
-                </button>
-              )}
-            </div>
+      <div className="filters-section">
+        <div className="filters-grid">
+          <div className="filter-group">
+            <input
+              type="text"
+              placeholder="🔍 Buscar personal..."
+              value={filtros.search}
+              onChange={(e) => setFiltros({...filtros, search: e.target.value})}
+              className="search-input"
+            />
           </div>
-
-          {/* Filtros */}
-          <div className="bg-gray-50 px-6 py-4 border-b">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <input
-                  type="text"
-                  placeholder="Buscar por nombre, apellido, cédula..."
-                  value={filtros.search}
-                  onChange={(e) => setFiltros({...filtros, search: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <select
-                  value={filtros.estado}
-                  onChange={(e) => setFiltros({...filtros, estado: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Todos los estados</option>
-                  <option value="activo">Activo</option>
-                  <option value="inactivo">Inactivo</option>
-                  <option value="terminado">Terminado</option>
-                  <option value="suspendido">Suspendido</option>
-                </select>
-              </div>
-              <div>
-                <select
-                  value={filtros.tipoContrato}
-                  onChange={(e) => setFiltros({...filtros, tipoContrato: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Todos los contratos</option>
-                  <option value="indefinido">Indefinido</option>
-                  <option value="fijo">Fijo</option>
-                  <option value="obra_labor">Obra Labor</option>
-                  <option value="prestacion_servicios">Prestación de Servicios</option>
-                </select>
-              </div>
-              <div>
-                <select
-                  value={filtros.proyectoId}
-                  onChange={(e) => setFiltros({...filtros, proyectoId: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Todos los proyectos</option>
-                  {proyectos.map(proyecto => (
-                    <option key={proyecto._id} value={proyecto._id}>
-                      {proyecto.nombre} ({proyecto.codigo})
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
+          <div className="filter-group">
+            <select
+              value={filtros.estado}
+              onChange={(e) => setFiltros({...filtros, estado: e.target.value})}
+              className="form-control"
+            >
+              <option value="">Todos los estados</option>
+              <option value="activo">Activo</option>
+              <option value="inactivo">Inactivo</option>
+              <option value="terminado">Terminado</option>
+              <option value="suspendido">Suspendido</option>
+            </select>
           </div>
-
-          {/* Lista de Personal */}
-          <div className="overflow-x-auto">
-            {error ? (
-              <div className="text-center py-8">
-                <p className="text-red-600">{error}</p>
-                <button
-                  onClick={cargarPersonal}
-                  className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-                >
-                  Reintentar
-                </button>
-              </div>
-            ) : personal.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-gray-500">No se encontraron registros de personal</p>
-              </div>
-            ) : (
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Nombre Completo
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Cédula
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Cargo
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Estado
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Tipo Contrato
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Proyecto
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Acciones
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {personal.map((persona) => (
-                    <tr key={persona._id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
-                          {persona.nombre} {persona.apellido}
-                        </div>
-                        {persona.email && (
-                          <div className="text-sm text-gray-500">{persona.email}</div>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {persona.cedula}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {persona.cargo}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${ESTADOS_COLORS[persona.estado]}`}>
-                          {persona.estado.charAt(0).toUpperCase() + persona.estado.slice(1)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${CONTRATO_COLORS[persona.tipoContrato]}`}>
-                          {persona.tipoContrato.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {persona.proyectoId ? `${persona.proyectoId.nombre} (${persona.proyectoId.codigo})` : 'Sin asignar'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => handleVerDetalle(persona)}
-                            className="text-blue-600 hover:text-blue-900"
-                          >
-                            Ver
-                          </button>
-                          {hasPermission('personal', 'update') && (
-                            <button
-                              onClick={() => handleEditar(persona)}
-                              className="text-indigo-600 hover:text-indigo-900"
-                            >
-                              Editar
-                            </button>
-                          )}
-                          {hasPermission('personal', 'delete') && (
-                            <button
-                              onClick={() => handleEliminar(persona._id)}
-                              className="text-red-600 hover:text-red-900"
-                            >
-                              Eliminar
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+          <div className="filter-group">
+            <select
+              value={filtros.tipoContrato}
+              onChange={(e) => setFiltros({...filtros, tipoContrato: e.target.value})}
+              className="form-control"
+            >
+              <option value="">Todos los contratos</option>
+              <option value="indefinido">Indefinido</option>
+              <option value="fijo">Fijo</option>
+              <option value="obra_labor">Obra Labor</option>
+              <option value="prestacion_servicios">Prestación de Servicios</option>
+            </select>
+          </div>
+          <div className="filter-group">
+            <select
+              value={filtros.proyectoId}
+              onChange={(e) => setFiltros({...filtros, proyectoId: e.target.value})}
+              className="form-control"
+            >
+              <option value="">Todos los proyectos</option>
+              {proyectos.map(proyecto => (
+                <option key={proyecto._id} value={proyecto._id}>
+                  {proyecto.nombre} ({proyecto.codigo})
+                </option>
+              ))}
+            </select>
           </div>
         </div>
       </div>
 
-      {/* Modal de Formulario */}
+      <div className="content-section">
+        {error ? (
+          <div className="empty-state">
+            <p className="error-message">{error}</p>
+            <button onClick={cargarPersonal} className="btn btn-primary">
+              Reintentar
+            </button>
+          </div>
+        ) : personal.length === 0 ? (
+          <div className="empty-state">
+            <p>No se encontraron registros de personal</p>
+          </div>
+        ) : (
+          <div className="table-container">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Nombre Completo</th>
+                  <th>Cédula</th>
+                  <th>Cargo</th>
+                  <th>Estado</th>
+                  <th>Tipo Contrato</th>
+                  <th>Proyecto</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {personal.map((persona) => (
+                  <tr key={persona._id}>
+                    <td>
+                      <div className="person-info">
+                        <span className="name">{persona.nombre} {persona.apellido}</span>
+                        {persona.email && <span className="email">{persona.email}</span>}
+                      </div>
+                    </td>
+                    <td>{persona.cedula}</td>
+                    <td>{persona.cargo}</td>
+                    <td>
+                      <span className={`status-badge ${persona.estado}`}>
+                        {persona.estado.charAt(0).toUpperCase() + persona.estado.slice(1)}
+                      </span>
+                    </td>
+                    <td>
+                      <span className={`contract-badge ${persona.tipoContrato}`}>
+                        {persona.tipoContrato.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      </span>
+                    </td>
+                    <td>{persona.proyectoId ? `${persona.proyectoId.nombre} (${persona.proyectoId.codigo})` : 'Sin asignar'}</td>
+                    <td>
+                      <div className="action-buttons">
+                        <button onClick={() => handleVerDetalle(persona)} className="btn-action view">Ver</button>
+                        {hasPermission('personal', 'update') && (
+                          <button onClick={() => handleEditar(persona)} className="btn-action edit">Editar</button>
+                        )}
+                        {hasPermission('personal', 'delete') && (
+                          <button onClick={() => handleEliminar(persona._id)} className="btn-action delete">Eliminar</button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
       {showForm && (
         <PersonalForm
           personal={personalEditData}
@@ -459,13 +410,180 @@ function PersonalContent() {
         />
       )}
 
-      {/* Modal de Detalle */}
       {showDetail && selectedPersonal && (
         <PersonalDetail
           personal={selectedPersonal}
           onClose={handleCloseDetail}
         />
       )}
+
+      <style jsx>{`
+        .archivo-container {
+          padding: 24px;
+          max-width: 1400px;
+          margin: 0 auto;
+        }
+        .page-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: 32px;
+          padding-bottom: 24px;
+          border-bottom: 2px solid #e5e7eb;
+        }
+        .header-content h1 {
+          font-size: 2rem;
+          font-weight: bold;
+          color: #1f2937;
+          margin: 0 0 8px 0;
+        }
+        .header-content p {
+          color: #6b7280;
+          margin: 0;
+        }
+        .btn {
+          padding: 12px 24px;
+          border-radius: 8px;
+          font-weight: 500;
+          text-decoration: none;
+          transition: all 0.2s;
+          border: none;
+          cursor: pointer;
+        }
+        .btn-primary {
+          background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+          color: white;
+        }
+        .btn-primary:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+        .filters-section {
+          background: #f8fafc;
+          padding: 24px;
+          border-radius: 12px;
+          margin-bottom: 24px;
+        }
+        .filters-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+          gap: 16px;
+        }
+        .form-control, .search-input {
+          width: 100%;
+          padding: 12px 16px;
+          border: 2px solid #e5e7eb;
+          border-radius: 8px;
+          font-size: 14px;
+          transition: border-color 0.2s;
+        }
+        .form-control:focus, .search-input:focus {
+          outline: none;
+          border-color: #3b82f6;
+        }
+        .content-section {
+          background: white;
+          border-radius: 12px;
+          overflow: hidden;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        .table-container {
+          overflow-x: auto;
+        }
+        .data-table {
+          width: 100%;
+          border-collapse: collapse;
+        }
+        .data-table th {
+          background: #f8fafc;
+          padding: 16px;
+          text-align: left;
+          font-weight: 600;
+          color: #374151;
+          border-bottom: 2px solid #e5e7eb;
+        }
+        .data-table td {
+          padding: 16px;
+          border-bottom: 1px solid #f3f4f6;
+        }
+        .data-table tr:hover {
+          background: #f9fafb;
+        }
+        .person-info {
+          display: flex;
+          flex-direction: column;
+        }
+        .person-info .name {
+          font-weight: 500;
+          color: #111827;
+        }
+        .person-info .email {
+          font-size: 0.875rem;
+          color: #6b7280;
+        }
+        .status-badge, .contract-badge {
+          padding: 4px 12px;
+          border-radius: 16px;
+          font-size: 0.75rem;
+          font-weight: 500;
+        }
+        .status-badge.activo {
+          background: #dcfce7;
+          color: #166534;
+        }
+        .status-badge.inactivo {
+          background: #fef3c7;
+          color: #92400e;
+        }
+        .status-badge.terminado {
+          background: #f3f4f6;
+          color: #374151;
+        }
+        .status-badge.suspendido {
+          background: #fee2e2;
+          color: #991b1b;
+        }
+        .contract-badge {
+          background: #e0e7ff;
+          color: #3730a3;
+        }
+        .action-buttons {
+          display: flex;
+          gap: 8px;
+        }
+        .btn-action {
+          padding: 6px 12px;
+          border: none;
+          border-radius: 4px;
+          font-size: 0.875rem;
+          cursor: pointer;
+          transition: background-color 0.2s;
+        }
+        .btn-action.view {
+          background: #dbeafe;
+          color: #1e40af;
+        }
+        .btn-action.edit {
+          background: #e0e7ff;
+          color: #5b21b6;
+        }
+        .btn-action.delete {
+          background: #fee2e2;
+          color: #dc2626;
+        }
+        .btn-action:hover {
+          opacity: 0.8;
+        }
+        .empty-state {
+          text-align: center;
+          padding: 48px 24px;
+          color: #6b7280;
+        }
+        .error-message {
+          color: #dc2626;
+          margin-bottom: 16px;
+        }
+      `}</style>
     </div>
   );
 }
