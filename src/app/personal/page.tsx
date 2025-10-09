@@ -723,7 +723,8 @@ function PersonalForm({ personal, proyectos, onSubmit, onClose }: any) {
     const submitData = {
       ...formData,
       salario: formData.salario ? parseFloat(formData.salario) : undefined,
-      fechaTerminacion: formData.fechaTerminacion || undefined
+      fechaTerminacion: formData.fechaTerminacion || undefined,
+      proyectoId: formData.proyectoId || undefined
     };
 
     onSubmit(submitData);
