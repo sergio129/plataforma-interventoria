@@ -227,6 +227,8 @@ function ProyectoContent() {
     const fechaFinPlaneada = formData.get('fechaFinPlaneada') as string;
     if (!fechaFinPlaneada || isNaN(Date.parse(fechaFinPlaneada))) {
       errors.push('Fecha de fin planeada inválida');
+    } else if (fechaInicio && new Date(fechaFinPlaneada) <= new Date(fechaInicio)) {
+      errors.push('La fecha de finalización debe ser posterior a la fecha de inicio del proyecto');
     }
 
     // Validar ubicación

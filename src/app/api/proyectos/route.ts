@@ -278,6 +278,24 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error en POST /api/proyectos:', error);
+    
+    // Manejar errores de validación de Mongoose
+    if (error.name === 'ValidationError') {
+      const validationErrors = Object.values(error.errors).map((err: any) => err.message);
+      return NextResponse.json(
+        { success: false, error: 'Datos inválidos', details: validationErrors },
+        { status: 400 }
+      );
+    }
+    
+    // Manejar otros errores de Mongoose (como errores de middleware pre-save)
+    if (error.message && error.message.includes('fecha de fin')) {
+      return NextResponse.json(
+        { success: false, error: 'Datos inválidos', details: [error.message] },
+        { status: 400 }
+      );
+    }
+    
     return NextResponse.json(
       { success: false, error: 'Error interno del servidor' },
       { status: 500 }
