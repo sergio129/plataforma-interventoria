@@ -10,6 +10,7 @@ import { usePermissions } from '../hooks/usePermissions';
 
 interface Proyecto {
   _id: string;
+  codigo?: string;
   nombre: string;
   descripcion: string;
   tipoProyecto: string;
@@ -122,12 +123,14 @@ function ProyectoContent() {
   const [selectedProyecto, setSelectedProyecto] = useState<Proyecto | null>(null);
   const [showDetail, setShowDetail] = useState(false);
   const [usuarios, setUsuarios] = useState<any[]>([]);
+  const [formErrors, setFormErrors] = useState<string[]>([]);
 
   const { canAccessProjects, loading: permissionsLoading, hasPermission } = usePermissions();
 
   useEffect(() => {
     if (!permissionsLoading) {
       cargarProyectos();
+      cargarUsuarios();
     }
   }, [permissionsLoading, filtros]);
 
@@ -159,6 +162,143 @@ function ProyectoContent() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const cargarUsuarios = async () => {
+    try {
+      const response = await fetch('/api/usuarios');
+      if (response.ok) {
+        const data = await response.json();
+        setUsuarios(data.data || []);
+      }
+    } catch (error) {
+      console.error('Error cargando usuarios:', error);
+    }
+  };
+
+  // Función de validación del lado del cliente
+  const validateFormData = (formData: FormData): string[] => {
+    const errors: string[] = [];
+
+    // Validar código (opcional, se genera automáticamente si no se proporciona)
+    const codigo = formData.get('codigo') as string;
+    // No validar código aquí ya que es opcional
+
+    // Validar nombre
+    const nombre = formData.get('nombre') as string;
+    if (!nombre || nombre.trim().length < 3 || nombre.length > 200) {
+      errors.push('El nombre debe tener entre 3 y 200 caracteres');
+    }
+
+    // Validar descripción
+    const descripcion = formData.get('descripcion') as string;
+    if (!descripcion || descripcion.trim().length < 10 || descripcion.length > 1000) {
+      errors.push('La descripción debe tener entre 10 y 1000 caracteres');
+    }
+
+    // Validar tipo de proyecto
+    const tipoProyecto = formData.get('tipoProyecto') as string;
+    const tiposValidos = ['construccion', 'infraestructura', 'tecnologia', 'consultoria', 'otros'];
+    if (!tipoProyecto || !tiposValidos.includes(tipoProyecto)) {
+      errors.push('Tipo de proyecto inválido');
+    }
+
+    // Validar estado
+    const estado = formData.get('estado') as string;
+    const estadosValidos = ['planificacion', 'en_ejecucion', 'suspendido', 'finalizado', 'cancelado'];
+    if (!estado || !estadosValidos.includes(estado)) {
+      errors.push('Estado de proyecto inválido');
+    }
+
+    // Validar prioridad
+    const prioridad = formData.get('prioridad') as string;
+    const prioridadesValidas = ['baja', 'media', 'alta', 'critica'];
+    if (!prioridad || !prioridadesValidas.includes(prioridad)) {
+      errors.push('Prioridad inválida');
+    }
+
+    // Validar fecha de inicio
+    const fechaInicio = formData.get('fechaInicio') as string;
+    if (!fechaInicio || isNaN(Date.parse(fechaInicio))) {
+      errors.push('Fecha de inicio inválida');
+    }
+
+    // Validar fecha de fin planeada
+    const fechaFinPlaneada = formData.get('fechaFinPlaneada') as string;
+    if (!fechaFinPlaneada || isNaN(Date.parse(fechaFinPlaneada))) {
+      errors.push('Fecha de fin planeada inválida');
+    }
+
+    // Validar ubicación
+    const direccion = formData.get('ubicacion.direccion') as string;
+    const ciudad = formData.get('ubicacion.ciudad') as string;
+    const departamento = formData.get('ubicacion.departamento') as string;
+    const pais = formData.get('ubicacion.pais') as string;
+
+    if (!direccion || direccion.trim().length === 0) {
+      errors.push('La dirección es requerida');
+    }
+    if (!ciudad || ciudad.trim().length === 0) {
+      errors.push('La ciudad es requerida');
+    }
+    if (!departamento || departamento.trim().length === 0) {
+      errors.push('El departamento es requerido');
+    }
+    if (!pais || pais.trim().length === 0) {
+      errors.push('El país es requerido');
+    }
+
+    // Validar contacto cliente
+    const contactoNombre = formData.get('contactoCliente.nombre') as string;
+    const contactoCargo = formData.get('contactoCliente.cargo') as string;
+    const contactoEmail = formData.get('contactoCliente.email') as string;
+
+    if (!contactoNombre || contactoNombre.trim().length === 0) {
+      errors.push('El nombre del contacto es requerido');
+    }
+    if (!contactoCargo || contactoCargo.trim().length === 0) {
+      errors.push('El cargo del contacto es requerido');
+    }
+    if (contactoEmail && !/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(contactoEmail)) {
+      errors.push('Email del contacto inválido');
+    }
+
+    // Validar presupuesto
+    const valorTotal = formData.get('presupuesto.valorTotal') as string;
+    const valorEjecutado = formData.get('presupuesto.valorEjecutado') as string;
+    const moneda = formData.get('presupuesto.moneda') as string;
+    const fechaAprobacion = formData.get('presupuesto.fechaAprobacion') as string;
+
+    const valorTotalNum = parseFloat(valorTotal);
+    const valorEjecutadoNum = parseFloat(valorEjecutado || '0');
+
+    if (!valorTotal || isNaN(valorTotalNum) || valorTotalNum <= 0) {
+      errors.push('El valor total del presupuesto debe ser un número positivo');
+    }
+    if (valorEjecutado && (isNaN(valorEjecutadoNum) || valorEjecutadoNum < 0)) {
+      errors.push('El valor ejecutado del presupuesto debe ser un número no negativo');
+    }
+    if (!moneda || !['COP', 'USD', 'EUR'].includes(moneda)) {
+      errors.push('La moneda del presupuesto debe ser COP, USD o EUR');
+    }
+    if (!fechaAprobacion || isNaN(Date.parse(fechaAprobacion))) {
+      errors.push('La fecha de aprobación del presupuesto es requerida y debe ser válida');
+    }
+
+    // Validar contratista
+    const contratista = formData.get('contratista') as string;
+    if (!contratista || contratista.trim().length === 0) {
+      errors.push('El contratista es requerido');
+    }
+
+    // Validar porcentaje de avance
+    const porcentajeAvance = formData.get('porcentajeAvance') as string;
+    const porcentajeNum = parseInt(porcentajeAvance || '0');
+    if (porcentajeAvance && (isNaN(porcentajeNum) || porcentajeNum < 0 || porcentajeNum > 100)) {
+      errors.push('El porcentaje de avance debe estar entre 0 y 100');
+    }
+
+    return errors;
   };
 
   const formatDate = (date: string) => {
@@ -194,18 +334,28 @@ function ProyectoContent() {
   const handleSubmitProyecto = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
+    setFormErrors([]);
 
     try {
       const formData = new FormData(e.currentTarget);
 
+      // Validación del lado del cliente
+      const validationErrors = validateFormData(formData);
+      if (validationErrors.length > 0) {
+        setFormErrors(validationErrors);
+        setLoading(false);
+        return;
+      }
+
       const proyectoData = {
+        codigo: formData.get('codigo'),
         nombre: formData.get('nombre'),
         descripcion: formData.get('descripcion'),
         tipoProyecto: formData.get('tipoProyecto'),
         estado: formData.get('estado'),
         prioridad: formData.get('prioridad'),
         fechaInicio: formData.get('fechaInicio'),
-        fechaFin: formData.get('fechaFinPlaneada') || undefined,
+        fechaFinPlaneada: formData.get('fechaFinPlaneada'),
         ubicacion: {
           direccion: formData.get('ubicacion.direccion'),
           ciudad: formData.get('ubicacion.ciudad'),
@@ -224,6 +374,7 @@ function ProyectoContent() {
           moneda: formData.get('presupuesto.moneda'),
           fechaAprobacion: formData.get('presupuesto.fechaAprobacion')
         },
+        contratista: formData.get('contratista'),
         porcentajeAvance: parseInt(formData.get('porcentajeAvance') as string) || 0
       };
 
@@ -252,17 +403,25 @@ function ProyectoContent() {
 
       if (response.ok) {
         const result = await response.json();
-        toast.success(proyectoEditData ? 'Proyecto actualizado correctamente' : `Proyecto ${result.data.nombre} creado exitosamente`);
+        const codigoGenerado = result.data?.codigo || 'desconocido';
+        toast.success(proyectoEditData ? 'Proyecto actualizado correctamente' : `Proyecto ${result.data.nombre} creado exitosamente (Código: ${codigoGenerado})`);
         setShowForm(false);
         setProyectoEditData(null);
         cargarProyectos();
         (e.target as HTMLFormElement).reset();
+        setFormErrors([]);
       } else {
         const errorData = await response.json();
+        if (errorData.details && Array.isArray(errorData.details)) {
+          setFormErrors(errorData.details);
+        } else {
+          setFormErrors([errorData.error || (proyectoEditData ? 'Error al actualizar el proyecto' : 'Error al crear el proyecto')]);
+        }
         toast.error(errorData.error || (proyectoEditData ? 'Error al actualizar el proyecto' : 'Error al crear el proyecto'));
       }
     } catch (error: any) {
       console.error('Error creating proyecto:', error);
+      setFormErrors(['Error de conexión al servidor']);
       toast.error('Error de conexión al crear el proyecto');
     } finally {
       setLoading(false);
@@ -621,6 +780,21 @@ function ProyectoContent() {
 
             <div className="modal-body">
               <form onSubmit={handleSubmitProyecto}>
+                {/* Mostrar errores de validación */}
+                {formErrors.length > 0 && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                    <div className="flex items-center mb-2">
+                      <span className="text-red-600 text-lg mr-2">⚠️</span>
+                      <span className="text-red-800 font-semibold">Errores de validación</span>
+                    </div>
+                    <ul className="list-disc list-inside text-red-700 text-sm space-y-1">
+                      {formErrors.map((error, index) => (
+                        <li key={index}>{error}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
                 <div className="form-grid">
                   <div className="form-group full-width">
                     <label htmlFor="nombre">🏷️ Nombre del Proyecto *</label>
@@ -629,11 +803,27 @@ function ProyectoContent() {
                       id="nombre"
                       name="nombre"
                       required
-                      placeholder="Ingrese el nombre del proyecto"
+                      placeholder="Ingrese el nombre del proyecto (3-200 caracteres)"
                       className="form-input"
+                      minLength={3}
                       maxLength={200}
                       defaultValue={proyectoEditData?.nombre || ''}
                     />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="codigo">🔢 Código del Proyecto</label>
+                    <input
+                      type="text"
+                      id="codigo"
+                      name="codigo"
+                      placeholder="Se generará automáticamente (ej: PROJ-202410-001)"
+                      className="form-input"
+                      maxLength={20}
+                      defaultValue={proyectoEditData?.codigo || ''}
+                      style={{ textTransform: 'uppercase' }}
+                    />
+                    <small className="text-gray-500 text-xs mt-1 block">Si no ingresa un código, se generará uno automáticamente</small>
                   </div>
 
                   <div className="form-group full-width">
@@ -642,10 +832,11 @@ function ProyectoContent() {
                       id="descripcion"
                       name="descripcion"
                       required
-                      placeholder="Ingrese una descripción del proyecto"
+                      placeholder="Ingrese una descripción del proyecto (mínimo 10 caracteres)"
                       className="form-textarea"
                       rows={3}
-                      maxLength={500}
+                      minLength={10}
+                      maxLength={1000}
                       defaultValue={proyectoEditData?.descripcion || ''}
                     />
                   </div>
@@ -710,11 +901,12 @@ function ProyectoContent() {
                   </div>
 
                   <div className="form-group">
-                    <label htmlFor="fechaFin">🏁 Fecha de Fin Planeada</label>
+                    <label htmlFor="fechaFinPlaneada">🏁 Fecha de Fin Planeada *</label>
                     <input
                       type="date"
-                      id="fechaFin"
+                      id="fechaFinPlaneada"
                       name="fechaFinPlaneada"
+                      required
                       className="form-input"
                       defaultValue={proyectoEditData?.fechaFinPlaneada ? proyectoEditData.fechaFinPlaneada.slice(0,10) : ''}
                     />
@@ -889,6 +1081,24 @@ function ProyectoContent() {
                         className="form-input"
                         defaultValue={proyectoEditData?.presupuesto?.fechaAprobacion ? proyectoEditData.presupuesto.fechaAprobacion.slice(0,10) : ''}
                       />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Información del Contratista */}
+                <div className="form-section">
+                  <h3>👷 Información del Contratista</h3>
+                  <div className="form-grid">
+                    <div className="form-group full-width">
+                      <label htmlFor="contratista">Contratista *</label>
+                      <select id="contratista" name="contratista" required className="form-select" defaultValue={typeof proyectoEditData?.contratista === 'object' ? proyectoEditData.contratista._id : proyectoEditData?.contratista || ''}>
+                        <option value="">Seleccionar contratista</option>
+                        {usuarios.map((usuario) => (
+                          <option key={usuario._id} value={usuario._id}>
+                            {usuario.nombre} {usuario.apellido} - {usuario.email}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                   </div>
                 </div>

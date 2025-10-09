@@ -2,9 +2,35 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '../../../config/database';
 import { Proyecto } from '../../../models/Proyecto';
 
+// Función para generar código único de proyecto
+async function generateUniqueProjectCode() {
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  
+  // Buscar el último proyecto del mes/año actual
+  const lastProject = await Proyecto.findOne({
+    codigo: new RegExp(`^PROJ-${year}${month}`)
+  }).sort({ codigo: -1 }).limit(1);
+  
+  let sequence = 1;
+  if (lastProject && lastProject.codigo) {
+    const match = lastProject.codigo.match(/PROJ-\d{6}-(\d+)/);
+    if (match) {
+      sequence = parseInt(match[1]) + 1;
+    }
+  }
+  
+  return `PROJ-${year}${month}-${String(sequence).padStart(3, '0')}`;
+}
+
 // Función de validación básica para proyectos
 function validateProyectoData(data: any) {
   const errors: string[] = [];
+
+  if (!data.codigo || typeof data.codigo !== 'string' || data.codigo.trim().length === 0) {
+    errors.push('El código del proyecto es requerido');
+  }
 
   if (!data.nombre || typeof data.nombre !== 'string' || data.nombre.trim().length < 3 || data.nombre.length > 200) {
     errors.push('El nombre debe tener entre 3 y 200 caracteres');
@@ -33,12 +59,62 @@ function validateProyectoData(data: any) {
     errors.push('Fecha de inicio inválida');
   }
 
-  if (data.fechaFin && isNaN(Date.parse(data.fechaFin))) {
-    errors.push('Fecha de fin inválida');
+  if (!data.fechaFinPlaneada || isNaN(Date.parse(data.fechaFinPlaneada))) {
+    errors.push('Fecha de fin planeada inválida');
   }
 
-  if (data.ubicacion && (typeof data.ubicacion !== 'string' || data.ubicacion.length > 200)) {
-    errors.push('La ubicación no puede exceder 200 caracteres');
+  if (data.ubicacion !== undefined) {
+    if (typeof data.ubicacion !== 'object' || !data.ubicacion) {
+      errors.push('La ubicación debe ser un objeto válido');
+    } else {
+      if (!data.ubicacion.direccion || typeof data.ubicacion.direccion !== 'string' || data.ubicacion.direccion.trim().length === 0) {
+        errors.push('La dirección es requerida');
+      }
+      if (!data.ubicacion.ciudad || typeof data.ubicacion.ciudad !== 'string' || data.ubicacion.ciudad.trim().length === 0) {
+        errors.push('La ciudad es requerida');
+      }
+      if (!data.ubicacion.departamento || typeof data.ubicacion.departamento !== 'string' || data.ubicacion.departamento.trim().length === 0) {
+        errors.push('El departamento es requerido');
+      }
+      if (!data.ubicacion.pais || typeof data.ubicacion.pais !== 'string' || data.ubicacion.pais.trim().length === 0) {
+        errors.push('El país es requerido');
+      }
+    }
+  }
+
+  if (!data.contactoCliente || typeof data.contactoCliente !== 'object') {
+    errors.push('El contacto del cliente es requerido');
+  } else {
+    if (!data.contactoCliente.nombre || typeof data.contactoCliente.nombre !== 'string' || data.contactoCliente.nombre.trim().length === 0) {
+      errors.push('El nombre del contacto es requerido');
+    }
+    if (!data.contactoCliente.cargo || typeof data.contactoCliente.cargo !== 'string' || data.contactoCliente.cargo.trim().length === 0) {
+      errors.push('El cargo del contacto es requerido');
+    }
+    if (data.contactoCliente.email && !/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(data.contactoCliente.email)) {
+      errors.push('Email del contacto inválido');
+    }
+  }
+
+  if (!data.presupuesto || typeof data.presupuesto !== 'object') {
+    errors.push('El presupuesto es requerido');
+  } else {
+    if (typeof data.presupuesto.valorTotal !== 'number' || data.presupuesto.valorTotal <= 0) {
+      errors.push('El valor total del presupuesto debe ser un número positivo');
+    }
+    if (typeof data.presupuesto.valorEjecutado !== 'number' || data.presupuesto.valorEjecutado < 0) {
+      errors.push('El valor ejecutado del presupuesto debe ser un número no negativo');
+    }
+    if (!data.presupuesto.moneda || typeof data.presupuesto.moneda !== 'string' || !['COP', 'USD', 'EUR'].includes(data.presupuesto.moneda)) {
+      errors.push('La moneda del presupuesto debe ser COP, USD o EUR');
+    }
+    if (!data.presupuesto.fechaAprobacion || isNaN(Date.parse(data.presupuesto.fechaAprobacion))) {
+      errors.push('La fecha de aprobación del presupuesto es requerida y debe ser válida');
+    }
+  }
+
+  if (!data.contratista || typeof data.contratista !== 'string') {
+    errors.push('El contratista es requerido');
   }
 
   if (data.porcentajeAvance !== undefined && (typeof data.porcentajeAvance !== 'number' || data.porcentajeAvance < 0 || data.porcentajeAvance > 100)) {
@@ -152,11 +228,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Preparar datos del proyecto
+    const proyectoData = { ...body };
+    
+    // Generar código único si no se proporciona
+    if (!proyectoData.codigo || proyectoData.codigo.trim() === '') {
+      proyectoData.codigo = await generateUniqueProjectCode();
+    }
+
     // Crear el proyecto directamente
     const nuevoProyecto = new Proyecto({
-      ...body,
+      ...proyectoData,
       activo: true,
-      porcentajeAvance: body.porcentajeAvance || 0,
+      porcentajeAvance: proyectoData.porcentajeAvance || 0,
       creadoPor: '507f1f77bcf86cd799439011' // ID de usuario simulado
     });
 
