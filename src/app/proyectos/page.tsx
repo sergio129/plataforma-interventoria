@@ -121,6 +121,7 @@ function ProyectoContent() {
   const [proyectoEditData, setProyectoEditData] = useState<Proyecto | null>(null);
   const [selectedProyecto, setSelectedProyecto] = useState<Proyecto | null>(null);
   const [showDetail, setShowDetail] = useState(false);
+  const [usuarios, setUsuarios] = useState<any[]>([]);
 
   const { canAccessProjects, loading: permissionsLoading, hasPermission } = usePermissions();
 
@@ -210,6 +211,18 @@ function ProyectoContent() {
           ciudad: formData.get('ubicacion.ciudad'),
           departamento: formData.get('ubicacion.departamento'),
           pais: formData.get('ubicacion.pais')
+        },
+        contactoCliente: {
+          nombre: formData.get('contactoCliente.nombre'),
+          cargo: formData.get('contactoCliente.cargo'),
+          telefono: formData.get('contactoCliente.telefono') || undefined,
+          email: formData.get('contactoCliente.email') || undefined
+        },
+        presupuesto: {
+          valorTotal: parseFloat(formData.get('presupuesto.valorTotal') as string),
+          valorEjecutado: parseFloat(formData.get('presupuesto.valorEjecutado') as string) || 0,
+          moneda: formData.get('presupuesto.moneda'),
+          fechaAprobacion: formData.get('presupuesto.fechaAprobacion')
         },
         porcentajeAvance: parseInt(formData.get('porcentajeAvance') as string) || 0
       };
