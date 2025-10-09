@@ -150,9 +150,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Limpiar campos vacíos
+    const cleanedBody = { ...body };
+    if (cleanedBody.proyectoId === '' || cleanedBody.proyectoId === null) {
+      cleanedBody.proyectoId = undefined;
+    }
+    if (cleanedBody.fechaTerminacion === '') {
+      cleanedBody.fechaTerminacion = undefined;
+    }
+
     // Crear el registro de personal
     const nuevoPersonal = new Personal({
-      ...body,
+      ...cleanedBody,
       creadoPor: '507f1f77bcf86cd799439011' // ID de usuario simulado
     });
 

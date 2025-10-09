@@ -71,10 +71,19 @@ export async function PUT(
       );
     }
 
+    // Limpiar campos vacíos
+    const cleanedBody = { ...body };
+    if (cleanedBody.proyectoId === '' || cleanedBody.proyectoId === null) {
+      cleanedBody.proyectoId = undefined;
+    }
+    if (cleanedBody.fechaTerminacion === '') {
+      cleanedBody.fechaTerminacion = undefined;
+    }
+
     const personalActualizado = await Personal.findByIdAndUpdate(
       id,
       {
-        ...body,
+        ...cleanedBody,
         fechaActualizacion: new Date()
       },
       { new: true, runValidators: true }

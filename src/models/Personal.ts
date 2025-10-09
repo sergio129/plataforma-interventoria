@@ -125,7 +125,6 @@ PersonalSchema.pre('save', function(next) {
 });
 
 // Índices
-PersonalSchema.index({ cedula: 1 });
 PersonalSchema.index({ estado: 1 });
 PersonalSchema.index({ proyectoId: 1 });
 PersonalSchema.index({ fechaIngreso: -1 });
