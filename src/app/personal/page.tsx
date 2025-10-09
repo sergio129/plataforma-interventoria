@@ -263,13 +263,10 @@ function PersonalContent() {
 
   return (
     <div className="archivo-container">
-      <DynamicMenu />
-      <UserProfile />
-      
       <div className="page-header">
         <div className="header-content">
           <h1>👥 Gestión de Personal</h1>
-          <p>Administrar personal de proyectos de interventoría</p>
+          <p>Administración del personal de la interventoría</p>
         </div>
         <div className="header-actions">
           {hasPermission('personal', 'create') && (
@@ -280,126 +277,148 @@ function PersonalContent() {
         </div>
       </div>
 
-      <div className="filters-section">
-        <div className="filters-grid">
-          <div className="filter-group">
-            <input
-              type="text"
-              placeholder="🔍 Buscar personal..."
-              value={filtros.search}
-              onChange={(e) => setFiltros({...filtros, search: e.target.value})}
-              className="search-input"
-            />
-          </div>
-          <div className="filter-group">
-            <select
-              value={filtros.estado}
-              onChange={(e) => setFiltros({...filtros, estado: e.target.value})}
-              className="form-control"
-            >
-              <option value="">Todos los estados</option>
-              <option value="activo">Activo</option>
-              <option value="inactivo">Inactivo</option>
-              <option value="terminado">Terminado</option>
-              <option value="suspendido">Suspendido</option>
-            </select>
-          </div>
-          <div className="filter-group">
-            <select
-              value={filtros.tipoContrato}
-              onChange={(e) => setFiltros({...filtros, tipoContrato: e.target.value})}
-              className="form-control"
-            >
-              <option value="">Todos los contratos</option>
-              <option value="indefinido">Indefinido</option>
-              <option value="fijo">Fijo</option>
-              <option value="obra_labor">Obra Labor</option>
-              <option value="prestacion_servicios">Prestación de Servicios</option>
-            </select>
-          </div>
-          <div className="filter-group">
-            <select
-              value={filtros.proyectoId}
-              onChange={(e) => setFiltros({...filtros, proyectoId: e.target.value})}
-              className="form-control"
-            >
-              <option value="">Todos los proyectos</option>
-              {proyectos.map(proyecto => (
-                <option key={proyecto._id} value={proyecto._id}>
-                  {proyecto.nombre} ({proyecto.codigo})
-                </option>
-              ))}
-            </select>
+        {/* Filtros */}
+        <div className="filters-section">
+          <div className="filters-grid">
+            <div className="filter-group">
+              <input
+                type="text"
+                placeholder="🔍 Buscar personal..."
+                value={filtros.search}
+                onChange={(e) => setFiltros({...filtros, search: e.target.value})}
+                className="search-input"
+              />
+            </div>
+            
+            <div className="filter-group">
+              <select
+                value={filtros.estado}
+                onChange={(e) => setFiltros({...filtros, estado: e.target.value})}
+                className="filter-select"
+              >
+                <option value="">Todos los estados</option>
+                <option value="activo">Activo</option>
+                <option value="inactivo">Inactivo</option>
+                <option value="terminado">Terminado</option>
+                <option value="suspendido">Suspendido</option>
+              </select>
+            </div>
+
+            <div className="filter-group">
+              <select
+                value={filtros.tipoContrato}
+                onChange={(e) => setFiltros({...filtros, tipoContrato: e.target.value})}
+                className="filter-select"
+              >
+                <option value="">Todos los contratos</option>
+                <option value="indefinido">Indefinido</option>
+                <option value="fijo">Fijo</option>
+                <option value="obra_labor">Obra Labor</option>
+                <option value="prestacion_servicios">Prestación de Servicios</option>
+              </select>
+            </div>
+
+            <div className="filter-group">
+              <select
+                value={filtros.proyectoId}
+                onChange={(e) => setFiltros({...filtros, proyectoId: e.target.value})}
+                className="filter-select"
+              >
+                <option value="">Todos los proyectos</option>
+                {proyectos.map(proyecto => (
+                  <option key={proyecto._id} value={proyecto._id}>
+                    {proyecto.nombre} ({proyecto.codigo})
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="content-section">
-        {error ? (
-          <div className="empty-state">
-            <p className="error-message">{error}</p>
-            <button onClick={cargarPersonal} className="btn btn-primary">
-              Reintentar
-            </button>
-          </div>
-        ) : personal.length === 0 ? (
-          <div className="empty-state">
-            <p>No se encontraron registros de personal</p>
-          </div>
-        ) : (
-          <div className="table-container">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Nombre Completo</th>
-                  <th>Cédula</th>
-                  <th>Cargo</th>
-                  <th>Estado</th>
-                  <th>Tipo Contrato</th>
-                  <th>Proyecto</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {personal.map((persona) => (
-                  <tr key={persona._id}>
-                    <td>
-                      <div className="person-info">
-                        <span className="name">{persona.nombre} {persona.apellido}</span>
-                        {persona.email && <span className="email">{persona.email}</span>}
-                      </div>
-                    </td>
-                    <td>{persona.cedula}</td>
-                    <td>{persona.cargo}</td>
-                    <td>
-                      <span className={`status-badge ${persona.estado}`}>
-                        {persona.estado.charAt(0).toUpperCase() + persona.estado.slice(1)}
-                      </span>
-                    </td>
-                    <td>
-                      <span className={`contract-badge ${persona.tipoContrato}`}>
-                        {persona.tipoContrato.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                      </span>
-                    </td>
-                    <td>{persona.proyectoId ? `${persona.proyectoId.nombre} (${persona.proyectoId.codigo})` : 'Sin asignar'}</td>
-                    <td>
-                      <div className="action-buttons">
-                        <button onClick={() => handleVerDetalle(persona)} className="btn-action view">Ver</button>
-                        {hasPermission('personal', 'update') && (
-                          <button onClick={() => handleEditar(persona)} className="btn-action edit">Editar</button>
-                        )}
-                        {hasPermission('personal', 'delete') && (
-                          <button onClick={() => handleEliminar(persona._id)} className="btn-action delete">Eliminar</button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+        {/* Lista de Personal */}
+        <div className="content-section">
+          {loading ? (
+            <div className="loading-state">
+              <div className="loading-spinner"></div>
+              <p>Cargando personal...</p>
+            </div>
+          ) : error ? (
+            <div className="error-state">
+              <p>❌ {error}</p>
+              <button onClick={cargarPersonal} className="btn btn-secondary">
+                🔄 Reintentar
+              </button>
+            </div>
+          ) : (
+            <div className="personal-grid">
+              {personal.length === 0 ? (
+                <div className="empty-state">
+                  <div className="empty-icon">👥</div>
+                  <h3>No hay personal registrado</h3>
+                  <p>No se encontraron registros de personal con los filtros aplicados.</p>
+                  <button 
+                    className="btn btn-primary"
+                    onClick={() => setShowForm(true)}
+                  >
+                    Registrar primer personal
+                  </button>
+                </div>
+              ) : (
+                <div className="table-container">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Nombre Completo</th>
+                        <th>Cédula</th>
+                        <th>Cargo</th>
+                        <th>Estado</th>
+                        <th>Tipo Contrato</th>
+                        <th>Proyecto</th>
+                        <th>Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {personal.map((persona) => (
+                        <tr key={persona._id}>
+                          <td>
+                            <div className="person-info">
+                              <span className="name">{persona.nombre} {persona.apellido}</span>
+                              {persona.email && <span className="email">{persona.email}</span>}
+                            </div>
+                          </td>
+                          <td>{persona.cedula}</td>
+                          <td>{persona.cargo}</td>
+                          <td>
+                            <span className={`status-badge ${persona.estado}`}>
+                              {persona.estado.charAt(0).toUpperCase() + persona.estado.slice(1)}
+                            </span>
+                          </td>
+                          <td>
+                            <span className={`contract-badge ${persona.tipoContrato}`}>
+                              {persona.tipoContrato.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                            </span>
+                          </td>
+                          <td>{persona.proyectoId ? `${persona.proyectoId.nombre} (${persona.proyectoId.codigo})` : 'Sin asignar'}</td>
+                          <td>
+                            <div className="action-buttons">
+                              <button onClick={() => handleVerDetalle(persona)} className="btn-action view">Ver</button>
+                              {hasPermission('personal', 'update') && (
+                                <button onClick={() => handleEditar(persona)} className="btn-action edit">Editar</button>
+                              )}
+                              {hasPermission('personal', 'delete') && (
+                                <button onClick={() => handleEliminar(persona._id)} className="btn-action delete">Eliminar</button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
       {showForm && (
         <PersonalForm
@@ -423,6 +442,7 @@ function PersonalContent() {
           max-width: 1400px;
           margin: 0 auto;
         }
+
         .page-header {
           display: flex;
           justify-content: space-between;
@@ -431,16 +451,24 @@ function PersonalContent() {
           padding-bottom: 24px;
           border-bottom: 2px solid #e5e7eb;
         }
+
         .header-content h1 {
           font-size: 2rem;
           font-weight: bold;
           color: #1f2937;
           margin: 0 0 8px 0;
         }
+
         .header-content p {
           color: #6b7280;
           margin: 0;
         }
+
+        .header-actions {
+          display: flex;
+          gap: 12px;
+        }
+
         .btn {
           padding: 12px 24px;
           border-radius: 8px;
@@ -450,50 +478,131 @@ function PersonalContent() {
           border: none;
           cursor: pointer;
         }
+
         .btn-primary {
           background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
           color: white;
         }
+
         .btn-primary:hover {
           transform: translateY(-1px);
           box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
         }
+
+        .btn-secondary {
+          background: #6b7280;
+          color: white;
+        }
+
+        .btn-secondary:hover {
+          background: #4b5563;
+        }
+
         .filters-section {
           background: #f8fafc;
           padding: 24px;
           border-radius: 12px;
           margin-bottom: 24px;
         }
+
         .filters-grid {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
           gap: 16px;
         }
-        .form-control, .search-input {
+
+        .filter-group {
+          display: flex;
+          flex-direction: column;
+        }
+
+        .search-input, .filter-select {
           width: 100%;
           padding: 12px 16px;
           border: 2px solid #e5e7eb;
           border-radius: 8px;
           font-size: 14px;
           transition: border-color 0.2s;
+          background: white;
         }
-        .form-control:focus, .search-input:focus {
+
+        .search-input:focus, .filter-select:focus {
           outline: none;
           border-color: #3b82f6;
         }
+
         .content-section {
           background: white;
           border-radius: 12px;
           overflow: hidden;
           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
+
+        .loading-state {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 48px 24px;
+          color: #6b7280;
+        }
+
+        .loading-spinner {
+          width: 32px;
+          height: 32px;
+          border: 3px solid #e5e7eb;
+          border-top: 3px solid #3b82f6;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+          margin-bottom: 16px;
+        }
+
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+
+        .error-state {
+          text-align: center;
+          padding: 48px 24px;
+          color: #dc2626;
+        }
+
+        .personal-grid {
+          padding: 0;
+        }
+
+        .empty-state {
+          text-align: center;
+          padding: 64px 24px;
+          color: #6b7280;
+        }
+
+        .empty-icon {
+          font-size: 4rem;
+          margin-bottom: 16px;
+        }
+
+        .empty-state h3 {
+          font-size: 1.5rem;
+          font-weight: 600;
+          color: #374151;
+          margin: 0 0 8px 0;
+        }
+
+        .empty-state p {
+          margin: 0 0 24px 0;
+        }
+
         .table-container {
           overflow-x: auto;
         }
+
         .data-table {
           width: 100%;
           border-collapse: collapse;
         }
+
         .data-table th {
           background: #f8fafc;
           padding: 16px;
@@ -502,55 +611,68 @@ function PersonalContent() {
           color: #374151;
           border-bottom: 2px solid #e5e7eb;
         }
+
         .data-table td {
           padding: 16px;
           border-bottom: 1px solid #f3f4f6;
         }
+
         .data-table tr:hover {
           background: #f9fafb;
         }
+
         .person-info {
           display: flex;
           flex-direction: column;
         }
+
         .person-info .name {
           font-weight: 500;
           color: #111827;
         }
+
         .person-info .email {
           font-size: 0.875rem;
           color: #6b7280;
         }
+
         .status-badge, .contract-badge {
           padding: 4px 12px;
           border-radius: 16px;
           font-size: 0.75rem;
           font-weight: 500;
         }
+
         .status-badge.activo {
           background: #dcfce7;
           color: #166534;
         }
+
         .status-badge.inactivo {
           background: #fef3c7;
           color: #92400e;
         }
+
         .status-badge.terminado {
           background: #f3f4f6;
           color: #374151;
         }
+
         .status-badge.suspendido {
           background: #fee2e2;
           color: #991b1b;
         }
+
         .contract-badge {
           background: #e0e7ff;
           color: #3730a3;
         }
+
         .action-buttons {
           display: flex;
           gap: 8px;
         }
+
         .btn-action {
           padding: 6px 12px;
           border: none;
@@ -559,29 +681,24 @@ function PersonalContent() {
           cursor: pointer;
           transition: background-color 0.2s;
         }
+
         .btn-action.view {
           background: #dbeafe;
           color: #1e40af;
         }
+
         .btn-action.edit {
           background: #e0e7ff;
           color: #5b21b6;
         }
+
         .btn-action.delete {
           background: #fee2e2;
           color: #dc2626;
         }
+
         .btn-action:hover {
           opacity: 0.8;
-        }
-        .empty-state {
-          text-align: center;
-          padding: 48px 24px;
-          color: #6b7280;
-        }
-        .error-message {
-          color: #dc2626;
-          margin-bottom: 16px;
         }
       `}</style>
     </div>
@@ -984,27 +1101,95 @@ function PersonalDetail({ personal, onClose }: any) {
 
 export default function Personal() {
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(true);
+  const [authenticated, setAuthenticated] = useState(false);
+  const role = getUserRole();
+  const { loading, menuItems, canAccess } = useMenuGeneration();
 
   useEffect(() => {
-    if (!isAuthenticated()) {
-      router.push('/auth/signin');
-      return;
-    }
+    const checkAuth = () => {
+      const authStatus = isAuthenticated();
+      setAuthenticated(authStatus);
+      setIsLoading(false);
 
-    const role = getUserRole();
-    if (!role) {
-      router.push('/auth/signin');
-      return;
-    }
+      if (!authStatus) {
+        router.push('/auth/signin');
+      }
+    };
+
+    checkAuth();
   }, [router]);
 
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+  if (isLoading || loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando gestión de personal...</p>
+        </div>
       </div>
-    }>
-      <PersonalContent />
-    </Suspense>
+    );
+  }
+
+  if (!authenticated) {
+    return null;
+  }
+
+  if (!canAccess('personal')) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="text-center p-8 bg-white rounded-lg shadow-lg">
+          <div className="text-6xl mb-4">🔒</div>
+          <h1 className="text-2xl font-bold text-gray-800 mb-2">Acceso Denegado</h1>
+          <p className="text-gray-600 mb-4">No tienes permisos para acceder a la gestión de personal</p>
+          <button
+            onClick={() => router.push('/dashboard')}
+            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Volver al Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="flex h-screen">
+        {/* Menú lateral */}
+        <div className="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg">
+          <DynamicMenu />
+        </div>
+
+        {/* Contenido principal */}
+        <div className="flex-1 flex flex-col ml-64">
+          {/* Header con perfil de usuario */}
+          <div className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
+            <div className="flex justify-between items-center">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">👥 Gestión de Personal</h1>
+                <p className="text-gray-600 text-sm">Administración del personal de la interventoría</p>
+              </div>
+              <UserProfile />
+            </div>
+          </div>
+
+          {/* Contenido del personal */}
+          <div className="flex-1 overflow-auto">
+            <Suspense fallback={
+              <div className="p-6">
+                <div className="animate-pulse">
+                  <div className="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
+                  <div className="h-32 bg-gray-200 rounded mb-4"></div>
+                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                </div>
+              </div>
+            }>
+              <PersonalContent />
+            </Suspense>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
