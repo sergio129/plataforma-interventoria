@@ -95,6 +95,8 @@ function PersonalContent() {
   const [selectedPersonal, setSelectedPersonal] = useState<Personal | null>(null);
   const [showDetail, setShowDetail] = useState(false);
   const [proyectos, setProyectos] = useState<any[]>([]);
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  const [personalToDelete, setPersonalToDelete] = useState<string | null>(null);
 
   const { canAccessDocuments, loading: permissionsLoading, hasPermission } = usePermissions();
 
@@ -176,13 +178,16 @@ function PersonalContent() {
     setShowForm(true);
   };
 
-  const handleEliminar = async (id: string) => {
-    if (!confirm('¿Está seguro de que desea eliminar este registro de personal?')) {
-      return;
-    }
+  const handleEliminar = (id: string) => {
+    setPersonalToDelete(id);
+    setShowConfirmDelete(true);
+  };
+
+  const confirmarEliminar = async () => {
+    if (!personalToDelete) return;
 
     try {
-      const response = await fetch(`/api/personal/${id}`, {
+      const response = await fetch(`/api/personal/${personalToDelete}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
@@ -197,7 +202,15 @@ function PersonalContent() {
       }
     } catch (err) {
       toast.error('Error de conexión');
+    } finally {
+      setShowConfirmDelete(false);
+      setPersonalToDelete(null);
     }
+  };
+
+  const cancelarEliminar = () => {
+    setShowConfirmDelete(false);
+    setPersonalToDelete(null);
   };
 
   const handleFormSubmit = async (formData: any) => {
@@ -427,6 +440,13 @@ function PersonalContent() {
         <PersonalDetail
           personal={selectedPersonal}
           onClose={handleCloseDetail}
+        />
+      )}
+
+      {showConfirmDelete && (
+        <ConfirmDeleteModal
+          onConfirm={confirmarEliminar}
+          onCancel={cancelarEliminar}
         />
       )}
 
@@ -1087,6 +1107,49 @@ function PersonalDetail({ personal, onClose }: any) {
                 <span>Actualizado: {formatDate(personal.fechaActualizacion)}</span>
               )}
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Componente modal de confirmación de eliminación
+function ConfirmDeleteModal({ onConfirm, onCancel }: { onConfirm: () => void, onCancel: () => void }) {
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg max-w-md w-full mx-4">
+        <div className="p-6">
+          <div className="flex items-center mb-4">
+            <div className="flex-shrink-0">
+              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                <span className="text-red-600 text-xl">⚠️</span>
+              </div>
+            </div>
+            <div className="ml-4">
+              <h3 className="text-lg font-medium text-gray-900">Confirmar eliminación</h3>
+            </div>
+          </div>
+          
+          <div className="mb-6">
+            <p className="text-gray-600">
+              ¿Está seguro de que desea eliminar este registro de personal? Esta acción no se puede deshacer.
+            </p>
+          </div>
+          
+          <div className="flex justify-end space-x-3">
+            <button
+              onClick={onCancel}
+              className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={onConfirm}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+            >
+              Eliminar
+            </button>
           </div>
         </div>
       </div>
