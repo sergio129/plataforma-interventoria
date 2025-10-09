@@ -269,11 +269,9 @@ function PersonalContent() {
           <p>Administración del personal de la interventoría</p>
         </div>
         <div className="header-actions">
-          {hasPermission('personal', 'create') && (
-            <button className="btn btn-primary" onClick={() => setShowForm(true)}>
-              ➕ Nuevo Personal
-            </button>
-          )}
+          <button className="btn btn-primary" onClick={() => setShowForm(true)}>
+            ➕ Nuevo Personal
+          </button>
         </div>
       </div>
 
@@ -402,12 +400,8 @@ function PersonalContent() {
                           <td>
                             <div className="action-buttons">
                               <button onClick={() => handleVerDetalle(persona)} className="btn-action view">Ver</button>
-                              {hasPermission('personal', 'update') && (
-                                <button onClick={() => handleEditar(persona)} className="btn-action edit">Editar</button>
-                              )}
-                              {hasPermission('personal', 'delete') && (
-                                <button onClick={() => handleEliminar(persona._id)} className="btn-action delete">Eliminar</button>
-                              )}
+                              <button onClick={() => handleEditar(persona)} className="btn-action edit">Editar</button>
+                              <button onClick={() => handleEliminar(persona._id)} className="btn-action delete">Eliminar</button>
                             </div>
                           </td>
                         </tr>
