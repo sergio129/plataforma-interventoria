@@ -241,3 +241,109 @@ export class UsuarioValidation {
     ];
   }
 }
+
+export class ProyectoValidation {
+  /**
+   * Validaciones para crear proyecto
+   */
+  static crear() {
+    return [
+      body('nombre')
+        .trim()
+        .isLength({ min: 3, max: 200 })
+        .withMessage('El nombre debe tener entre 3 y 200 caracteres'),
+
+      body('descripcion')
+        .trim()
+        .isLength({ min: 10, max: 1000 })
+        .withMessage('La descripción debe tener entre 10 y 1000 caracteres'),
+
+      body('tipoProyecto')
+        .isIn(['construccion', 'infraestructura', 'tecnologia', 'consultoria', 'otros'])
+        .withMessage('Tipo de proyecto inválido'),
+
+      body('estado')
+        .isIn(['planificacion', 'en_ejecucion', 'suspendido', 'finalizado', 'cancelado'])
+        .withMessage('Estado de proyecto inválido'),
+
+      body('prioridad')
+        .isIn(['baja', 'media', 'alta', 'critica'])
+        .withMessage('Prioridad inválida'),
+
+      body('fechaInicio')
+        .isISO8601()
+        .withMessage('Fecha de inicio inválida'),
+
+      body('fechaFin')
+        .optional()
+        .isISO8601()
+        .withMessage('Fecha de fin inválida'),
+
+      body('ubicacion')
+        .optional()
+        .trim()
+        .isLength({ max: 200 })
+        .withMessage('La ubicación no puede exceder 200 caracteres'),
+
+      body('porcentajeAvance')
+        .optional()
+        .isInt({ min: 0, max: 100 })
+        .withMessage('El porcentaje de avance debe estar entre 0 y 100')
+    ];
+  }
+
+  /**
+   * Validaciones para actualizar proyecto
+   */
+  static actualizar() {
+    return [
+      body('nombre')
+        .optional()
+        .trim()
+        .isLength({ min: 3, max: 200 })
+        .withMessage('El nombre debe tener entre 3 y 200 caracteres'),
+
+      body('descripcion')
+        .optional()
+        .trim()
+        .isLength({ min: 10, max: 1000 })
+        .withMessage('La descripción debe tener entre 10 y 1000 caracteres'),
+
+      body('tipoProyecto')
+        .optional()
+        .isIn(['construccion', 'infraestructura', 'tecnologia', 'consultoria', 'otros'])
+        .withMessage('Tipo de proyecto inválido'),
+
+      body('estado')
+        .optional()
+        .isIn(['planificacion', 'en_ejecucion', 'suspendido', 'finalizado', 'cancelado'])
+        .withMessage('Estado de proyecto inválido'),
+
+      body('prioridad')
+        .optional()
+        .isIn(['baja', 'media', 'alta', 'critica'])
+        .withMessage('Prioridad inválida'),
+
+      body('fechaInicio')
+        .optional()
+        .isISO8601()
+        .withMessage('Fecha de inicio inválida'),
+
+      body('fechaFin')
+        .optional()
+        .isISO8601()
+        .withMessage('Fecha de fin inválida'),
+
+      body('ubicacion')
+        .optional()
+        .trim()
+        .isLength({ max: 200 })
+        .withMessage('La ubicación no puede exceder 200 caracteres'),
+
+      body('porcentajeAvance')
+        .optional()
+        .isInt({ min: 0, max: 100 })
+        .withMessage('El porcentaje de avance debe estar entre 0 y 100')
+    ];
+  }
+}
