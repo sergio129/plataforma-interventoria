@@ -274,16 +274,30 @@ export class ProyectoValidation {
         .isISO8601()
         .withMessage('Fecha de inicio inválida'),
 
-      body('fechaFin')
+      body('fechaFinPlaneada')
         .optional()
         .isISO8601()
-        .withMessage('Fecha de fin inválida'),
+        .withMessage('Fecha de fin planeada inválida'),
 
-      body('ubicacion')
-        .optional()
+      body('ubicacion.direccion')
         .trim()
-        .isLength({ max: 200 })
-        .withMessage('La ubicación no puede exceder 200 caracteres'),
+        .isLength({ min: 1, max: 200 })
+        .withMessage('La dirección es requerida y no puede exceder 200 caracteres'),
+
+      body('ubicacion.ciudad')
+        .trim()
+        .isLength({ min: 1, max: 100 })
+        .withMessage('La ciudad es requerida y no puede exceder 100 caracteres'),
+
+      body('ubicacion.departamento')
+        .trim()
+        .isLength({ min: 1, max: 100 })
+        .withMessage('El departamento es requerido y no puede exceder 100 caracteres'),
+
+      body('ubicacion.pais')
+        .trim()
+        .isLength({ min: 1, max: 100 })
+        .withMessage('El país es requerido y no puede exceder 100 caracteres'),
 
       body('porcentajeAvance')
         .optional()

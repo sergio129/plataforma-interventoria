@@ -373,7 +373,6 @@ ProyectoSchema.pre('save', function(next) {
 });
 
 // Índices
-ProyectoSchema.index({ codigo: 1 });
 ProyectoSchema.index({ nombre: 'text', descripcion: 'text' });
 ProyectoSchema.index({ tipoProyecto: 1 });
 ProyectoSchema.index({ estado: 1 });

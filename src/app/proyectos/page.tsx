@@ -28,12 +28,28 @@ interface Proyecto {
     nombre: string;
     email: string;
   };
+  contactoCliente?: {
+    nombre: string;
+    cargo: string;
+    telefono?: string;
+    email?: string;
+  };
   presupuesto?: {
     valorTotal: number;
     valorEjecutado: number;
     moneda: string;
+    fechaAprobacion: string;
   };
-  ubicacion?: string;
+  ubicacion?: {
+    direccion: string;
+    ciudad: string;
+    departamento: string;
+    pais: string;
+    coordenadas?: {
+      latitud: number;
+      longitud: number;
+    };
+  };
   porcentajeAvance: number;
   activo: boolean;
 }
@@ -188,8 +204,13 @@ function ProyectoContent() {
         estado: formData.get('estado'),
         prioridad: formData.get('prioridad'),
         fechaInicio: formData.get('fechaInicio'),
-        fechaFin: formData.get('fechaFin') || undefined,
-        ubicacion: formData.get('ubicacion') || '',
+        fechaFin: formData.get('fechaFinPlaneada') || undefined,
+        ubicacion: {
+          direccion: formData.get('ubicacion.direccion'),
+          ciudad: formData.get('ubicacion.ciudad'),
+          departamento: formData.get('ubicacion.departamento'),
+          pais: formData.get('ubicacion.pais')
+        },
         porcentajeAvance: parseInt(formData.get('porcentajeAvance') as string) || 0
       };
 
@@ -504,7 +525,9 @@ function ProyectoContent() {
                 {selectedProyecto.ubicacion && (
                   <div className="detail-item full-width">
                     <label>Ubicación:</label>
-                    <p className="observaciones-text">{selectedProyecto.ubicacion}</p>
+                    <p className="observaciones-text">
+                      {selectedProyecto.ubicacion.direccion}, {selectedProyecto.ubicacion.ciudad}, {selectedProyecto.ubicacion.departamento}, {selectedProyecto.ubicacion.pais}
+                    </p>
                   </div>
                 )}
               </div>
@@ -685,16 +708,175 @@ function ProyectoContent() {
                   </div>
 
                   <div className="form-group full-width">
-                    <label htmlFor="ubicacion">📍 Ubicación</label>
+                    <label htmlFor="ubicacion.direccion">📍 Dirección *</label>
                     <input
                       type="text"
-                      id="ubicacion"
-                      name="ubicacion"
-                      placeholder="Ingrese la ubicación del proyecto"
+                      id="ubicacion.direccion"
+                      name="ubicacion.direccion"
+                      required
+                      placeholder="Ingrese la dirección del proyecto"
                       className="form-input"
                       maxLength={200}
-                      defaultValue={proyectoEditData?.ubicacion || ''}
+                      defaultValue={proyectoEditData?.ubicacion?.direccion || ''}
                     />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="ubicacion.ciudad">🏙️ Ciudad *</label>
+                    <input
+                      type="text"
+                      id="ubicacion.ciudad"
+                      name="ubicacion.ciudad"
+                      required
+                      placeholder="Ciudad"
+                      className="form-input"
+                      maxLength={100}
+                      defaultValue={proyectoEditData?.ubicacion?.ciudad || ''}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="ubicacion.departamento">🏛️ Departamento *</label>
+                    <input
+                      type="text"
+                      id="ubicacion.departamento"
+                      name="ubicacion.departamento"
+                      required
+                      placeholder="Departamento"
+                      className="form-input"
+                      maxLength={100}
+                      defaultValue={proyectoEditData?.ubicacion?.departamento || ''}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="ubicacion.pais">🌍 País *</label>
+                    <input
+                      type="text"
+                      id="ubicacion.pais"
+                      name="ubicacion.pais"
+                      required
+                      placeholder="País"
+                      className="form-input"
+                      maxLength={100}
+                      defaultValue={proyectoEditData?.ubicacion?.pais || 'Colombia'}
+                    />
+                  </div>
+                </div>
+
+                {/* Información de Contacto */}
+                <div className="form-section">
+                  <h3>👤 Información de Contacto del Cliente</h3>
+                  <div className="form-grid">
+                    <div className="form-group">
+                      <label htmlFor="contactoCliente.nombre">Nombre del Contacto *</label>
+                      <input
+                        type="text"
+                        id="contactoCliente.nombre"
+                        name="contactoCliente.nombre"
+                        required
+                        placeholder="Nombre completo"
+                        className="form-input"
+                        maxLength={100}
+                        defaultValue={proyectoEditData?.contactoCliente?.nombre || ''}
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="contactoCliente.cargo">Cargo *</label>
+                      <input
+                        type="text"
+                        id="contactoCliente.cargo"
+                        name="contactoCliente.cargo"
+                        required
+                        placeholder="Cargo del contacto"
+                        className="form-input"
+                        maxLength={100}
+                        defaultValue={proyectoEditData?.contactoCliente?.cargo || ''}
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="contactoCliente.telefono">Teléfono</label>
+                      <input
+                        type="tel"
+                        id="contactoCliente.telefono"
+                        name="contactoCliente.telefono"
+                        placeholder="Número de teléfono"
+                        className="form-input"
+                        maxLength={20}
+                        defaultValue={proyectoEditData?.contactoCliente?.telefono || ''}
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="contactoCliente.email">Email</label>
+                      <input
+                        type="email"
+                        id="contactoCliente.email"
+                        name="contactoCliente.email"
+                        placeholder="correo@ejemplo.com"
+                        className="form-input"
+                        maxLength={100}
+                        defaultValue={proyectoEditData?.contactoCliente?.email || ''}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Información Presupuestal */}
+                <div className="form-section">
+                  <h3>💰 Información Presupuestal</h3>
+                  <div className="form-grid">
+                    <div className="form-group">
+                      <label htmlFor="presupuesto.valorTotal">Valor Total *</label>
+                      <input
+                        type="number"
+                        id="presupuesto.valorTotal"
+                        name="presupuesto.valorTotal"
+                        required
+                        placeholder="0"
+                        min="0"
+                        step="0.01"
+                        className="form-input"
+                        defaultValue={proyectoEditData?.presupuesto?.valorTotal || ''}
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="presupuesto.valorEjecutado">Valor Ejecutado</label>
+                      <input
+                        type="number"
+                        id="presupuesto.valorEjecutado"
+                        name="presupuesto.valorEjecutado"
+                        placeholder="0"
+                        min="0"
+                        step="0.01"
+                        className="form-input"
+                        defaultValue={proyectoEditData?.presupuesto?.valorEjecutado || 0}
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="presupuesto.moneda">Moneda *</label>
+                      <select id="presupuesto.moneda" name="presupuesto.moneda" required className="form-select" defaultValue={proyectoEditData?.presupuesto?.moneda || 'COP'}>
+                        <option value="COP">COP - Peso Colombiano</option>
+                        <option value="USD">USD - Dólar Americano</option>
+                        <option value="EUR">EUR - Euro</option>
+                      </select>
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="presupuesto.fechaAprobacion">Fecha de Aprobación *</label>
+                      <input
+                        type="date"
+                        id="presupuesto.fechaAprobacion"
+                        name="presupuesto.fechaAprobacion"
+                        required
+                        className="form-input"
+                        defaultValue={proyectoEditData?.presupuesto?.fechaAprobacion ? proyectoEditData.presupuesto.fechaAprobacion.slice(0,10) : ''}
+                      />
+                    </div>
                   </div>
                 </div>
 
