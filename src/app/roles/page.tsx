@@ -197,7 +197,8 @@ export default function RolesPublicPage() {
     { key: 'documentos', label: 'documentos' },
     { key: 'reportes', label: 'reportes' },
     { key: 'configuracion', label: 'configuracion' },
-    { key: 'evidencias', label: 'evidencias' } // <--- Agregado
+    { key: 'evidencias', label: 'evidencias' },
+    { key: 'personal', label: 'personal' }
   ];
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -229,8 +230,12 @@ export default function RolesPublicPage() {
         const j = await r.json();
         let recursosList = j.success ? (j.data.recursos || []) : FALLBACK_RECURSOS;
         // Asegurar que 'evidencias' esté presente y no duplicado
-        if (!recursosList.some(r => r.key === 'evidencias')) {
+        if (!recursosList.some((r: { key: string; label: string }) => r.key === 'evidencias')) {
           recursosList.push({ key: 'evidencias', label: 'evidencias' });
+        }
+        // Asegurar que 'personal' esté presente y no duplicado
+        if (!recursosList.some((r: { key: string; label: string }) => r.key === 'personal')) {
+          recursosList.push({ key: 'personal', label: 'personal' });
         }
         setRecursos(recursosList);
         setActiveTab((recursosList[0] && recursosList[0].key) || null);

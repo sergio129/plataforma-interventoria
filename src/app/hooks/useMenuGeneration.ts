@@ -21,7 +21,8 @@ const RESOURCE_MENU_MAP: Record<string, MenuItems> = {
   'documentos': { href: '/documentos', label: 'Documentos', icon: '📄', order: 4 },
   'reportes': { href: '/reportes', label: 'Reportes', icon: '📊', order: 5 },
   'configuracion': { href: '/configuracion', label: 'Configuración', icon: '⚙️', order: 6 },
-  'evidencias': { href: '/evidencias', label: 'Evidencias', icon: '🧾', order: 7 }, // <--- Agregado
+  'evidencias': { href: '/evidencias', label: 'Evidencias', icon: '🧾', order: 7 },
+  'personal': { href: '/personal', label: 'Personal', icon: '👷', order: 8 },
 };
 
 export function useMenuGeneration() {
