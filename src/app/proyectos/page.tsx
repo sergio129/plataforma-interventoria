@@ -784,12 +784,12 @@ function ProyectoContent() {
               <form onSubmit={handleSubmitProyecto}>
                 {/* Mostrar errores de validación */}
                 {formErrors.length > 0 && (
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
                     <div className="flex items-center mb-2">
-                      <span className="text-red-600 text-lg mr-2">⚠️</span>
-                      <span className="text-red-800 font-semibold">Errores de validación</span>
+                      <span className="text-amber-600 text-lg mr-2">⚠️</span>
+                      <span className="text-amber-800 font-semibold">Por favor revisa la información</span>
                     </div>
-                    <ul className="list-disc list-inside text-red-700 text-sm space-y-1">
+                    <ul className="list-disc list-inside text-amber-700 text-sm space-y-1">
                       {formErrors.map((error, index) => (
                         <li key={index}>{error}</li>
                       ))}

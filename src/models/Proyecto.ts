@@ -364,10 +364,10 @@ ProyectoSchema.pre('save', function(next) {
 // Validación personalizada para fechas
 ProyectoSchema.pre('save', function(next) {
   if (this.fechaFinPlaneada <= this.fechaInicio) {
-    next(new Error('La fecha de fin debe ser posterior a la fecha de inicio'));
+    next(new Error('La fecha de finalización debe ser posterior a la fecha de inicio del proyecto'));
   }
   if (this.fechaFinReal && this.fechaFinReal <= this.fechaInicio) {
-    next(new Error('La fecha de fin real debe ser posterior a la fecha de inicio'));
+    next(new Error('La fecha de finalización real debe ser posterior a la fecha de inicio del proyecto'));
   }
   next();
 });
