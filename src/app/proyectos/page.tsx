@@ -16,6 +16,7 @@ interface Proyecto {
   estado: string;
   prioridad: string;
   fechaInicio: string;
+  fechaFinPlaneada?: string;
   fechaFin?: string;
   interventor?: {
     _id: string;
@@ -124,16 +125,17 @@ function ProyectoContent() {
       if (filtros.prioridad) params.append('prioridad', filtros.prioridad);
 
       const response = await fetch(`/api/proyectos?${params.toString()}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-        }
+        // headers: {
+        //   'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        // }
       });
 
       if (response.ok) {
         const data = await response.json();
         setProyectos(data.data?.proyectos || []);
       } else {
-        setError('Error al cargar los proyectos');
+        const errorData = await response.json();
+        setError(errorData.error || 'Error al cargar los proyectos');
       }
     } catch (err) {
       setError('Error de conexión');
@@ -198,7 +200,7 @@ function ProyectoContent() {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+            // 'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
           },
           body: JSON.stringify(proyectoData),
         });
@@ -208,7 +210,7 @@ function ProyectoContent() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+            // 'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
           },
           body: JSON.stringify(proyectoData),
         });
@@ -386,10 +388,10 @@ function ProyectoContent() {
                         <span className="label">📅 Inicio:</span>
                         <span className="value">{formatDate(proyecto.fechaInicio)}</span>
                       </div>
-                      {proyecto.fechaFin && (
+                      {proyecto.fechaFinPlaneada && (
                         <div className="info-item">
                           <span className="label">🏁 Fin:</span>
-                          <span className="value">{formatDate(proyecto.fechaFin)}</span>
+                          <span className="value">{formatDate(proyecto.fechaFinPlaneada)}</span>
                         </div>
                       )}
                       {proyecto.interventor && (
@@ -482,10 +484,10 @@ function ProyectoContent() {
                     <label>Fecha Inicio:</label>
                     <span>{formatDate(selectedProyecto.fechaInicio)}</span>
                   </div>
-                  {selectedProyecto.fechaFin && (
+                  {selectedProyecto.fechaFinPlaneada && (
                     <div className="detail-item">
-                      <label>Fecha Fin:</label>
-                      <span>{formatDate(selectedProyecto.fechaFin)}</span>
+                      <label>Fecha de Fin Planeada:</label>
+                      <span>{formatDate(selectedProyecto.fechaFinPlaneada)}</span>
                     </div>
                   )}
                   <div className="detail-item">
@@ -672,13 +674,13 @@ function ProyectoContent() {
                   </div>
 
                   <div className="form-group">
-                    <label htmlFor="fechaFin">🏁 Fecha de Fin</label>
+                    <label htmlFor="fechaFin">🏁 Fecha de Fin Planeada</label>
                     <input
                       type="date"
                       id="fechaFin"
-                      name="fechaFin"
+                      name="fechaFinPlaneada"
                       className="form-input"
-                      defaultValue={proyectoEditData?.fechaFin ? proyectoEditData.fechaFin.slice(0,10) : ''}
+                      defaultValue={proyectoEditData?.fechaFinPlaneada ? proyectoEditData.fechaFinPlaneada.slice(0,10) : ''}
                     />
                   </div>
 

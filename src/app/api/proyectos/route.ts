@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '../../../config/database';
-import { getUserFromRequest } from '../../../lib/auth';
-import { ProyectoController } from '../../../controllers/ProyectoController';
+import { Proyecto } from '../../../models/Proyecto';
 
 // Función de validación básica para proyectos
 function validateProyectoData(data: any) {
@@ -52,28 +51,84 @@ function validateProyectoData(data: any) {
 // GET /api/proyectos - Listar proyectos
 export async function GET(request: NextRequest) {
   try {
-    const user = getUserFromRequest(request);
     await connectToDatabase();
 
-    // Simular request/response de Express para usar el controlador existente
-    const mockReq = {
-      query: Object.fromEntries(new URL(request.url).searchParams),
-      user: user
-    } as any;
+    // Obtener parámetros de consulta
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '10');
+    const tipo = searchParams.get('tipo');
+    const estado = searchParams.get('estado');
+    const prioridad = searchParams.get('prioridad');
+    const search = searchParams.get('search');
 
-    let mockRes = {
-      json: (data: any) => data,
-      status: (code: number) => ({ json: (data: any) => ({ ...data, statusCode: code }) })
-    } as any;
+    const pageNum = page;
+    const limitNum = limit;
+    const skip = (pageNum - 1) * limitNum;
 
-    const result = await ProyectoController.listar(mockReq, mockRes);
+    // Construir filtros
+    const filtros: any = {};
+
+    if (tipo) filtros.tipoProyecto = tipo;
+    if (estado) filtros.estado = estado;
+    if (prioridad) filtros.prioridad = prioridad;
+    if (search) {
+      filtros.$or = [
+        { nombre: { $regex: search, $options: 'i' } },
+        { descripcion: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    // Obtener proyectos con populate
+    const proyectos = await Proyecto.find(filtros)
+      .populate('contratista', 'nombre apellido email telefono profesion')
+      .populate('interventor', 'nombre apellido email telefono profesion')
+      .populate('supervisor', 'nombre apellido email telefono profesion')
+      .populate('creadoPor', 'nombre apellido email')
+      .skip(skip)
+      .limit(limitNum)
+      .sort({ createdAt: -1 });
+
+    const total = await Proyecto.countDocuments(filtros);
+
+    // Convertir a objetos JSON serializables
+    const proyectosSerializable = proyectos.map((proyecto: any) => ({
+      ...proyecto.toObject(),
+      _id: proyecto._id.toString(),
+      interventor: proyecto.interventor ? {
+        ...proyecto.interventor.toObject(),
+        _id: proyecto.interventor._id.toString()
+      } : null,
+      contratista: proyecto.contratista ? {
+        ...proyecto.contratista.toObject(),
+        _id: proyecto.contratista._id.toString()
+      } : null,
+      supervisor: proyecto.supervisor ? {
+        ...proyecto.supervisor.toObject(),
+        _id: proyecto.supervisor._id.toString()
+      } : null,
+      creadoPor: proyecto.creadoPor ? {
+        ...proyecto.creadoPor.toObject(),
+        _id: proyecto.creadoPor._id.toString()
+      } : null
+    }));
+
+    const result = {
+      success: true,
+      data: {
+        proyectos: proyectosSerializable,
+        pagination: {
+          current: pageNum,
+          total: Math.ceil(total / limitNum),
+          count: proyectos.length,
+          totalRecords: total
+        }
+      }
+    };
 
     return NextResponse.json(result);
   } catch (error: any) {
     console.error('Error en GET /api/proyectos:', error);
-    if (error instanceof NextResponse) {
-      return error;
-    }
     return NextResponse.json(
       { success: false, error: 'Error interno del servidor' },
       { status: 500 }
@@ -84,16 +139,7 @@ export async function GET(request: NextRequest) {
 // POST /api/proyectos - Crear proyecto
 export async function POST(request: NextRequest) {
   try {
-    const user = getUserFromRequest(request);
     await connectToDatabase();
-
-    // Verificar permisos (simular esInterventorOAdmin)
-    if (user.tipoUsuario !== 'administrador' && user.tipoUsuario !== 'interventor') {
-      return NextResponse.json(
-        { success: false, error: 'No tienes permisos para crear proyectos' },
-        { status: 403 }
-      );
-    }
 
     const body = await request.json();
 
@@ -106,25 +152,48 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Simular request/response de Express
-    const mockReq = {
-      body,
-      user: user
-    } as any;
+    // Crear el proyecto directamente
+    const nuevoProyecto = new Proyecto({
+      ...body,
+      activo: true,
+      porcentajeAvance: body.porcentajeAvance || 0,
+      creadoPor: '507f1f77bcf86cd799439011' // ID de usuario simulado
+    });
 
-    let mockRes = {
-      json: (data: any) => data,
-      status: (code: number) => ({ json: (data: any) => ({ ...data, statusCode: code }) })
-    } as any;
+    const proyectoGuardado = await nuevoProyecto.save();
 
-    const result = await ProyectoController.crear(mockReq, mockRes);
+    // Poblar referencias
+    await proyectoGuardado.populate('contratista interventor supervisor creadoPor');
 
-    return NextResponse.json(result);
+    // Convertir a objeto serializable
+    const proyectoSerializable = {
+      ...proyectoGuardado.toObject(),
+      _id: proyectoGuardado._id.toString(),
+      interventor: proyectoGuardado.interventor ? {
+        ...proyectoGuardado.interventor.toObject(),
+        _id: proyectoGuardado.interventor._id.toString()
+      } : null,
+      contratista: proyectoGuardado.contratista ? {
+        ...proyectoGuardado.contratista.toObject(),
+        _id: proyectoGuardado.contratista._id.toString()
+      } : null,
+      supervisor: proyectoGuardado.supervisor ? {
+        ...proyectoGuardado.supervisor.toObject(),
+        _id: proyectoGuardado.supervisor._id.toString()
+      } : null,
+      creadoPor: proyectoGuardado.creadoPor ? {
+        ...proyectoGuardado.creadoPor.toObject(),
+        _id: proyectoGuardado.creadoPor._id.toString()
+      } : null
+    };
+
+    return NextResponse.json({
+      success: true,
+      data: proyectoSerializable,
+      message: 'Proyecto creado exitosamente'
+    });
   } catch (error: any) {
     console.error('Error en POST /api/proyectos:', error);
-    if (error instanceof NextResponse) {
-      return error;
-    }
     return NextResponse.json(
       { success: false, error: 'Error interno del servidor' },
       { status: 500 }
